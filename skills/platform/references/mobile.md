@@ -1,0 +1,145 @@
+# Mobile
+
+## Overview
+
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`.
+
+## Project Structure
+
+```
+packages/mobile/
+  app/
+    _layout.tsx              Root layout (QueryClientProvider + SafeAreaProvider)
+    index.tsx                / screen
+    profile.tsx              /profile screen
+    users/
+      index.tsx              /users screen
+      [id].tsx               /users/:id screen
+  lib/
+    api.ts                   Typed API client (createReactQueryClient<AppType>)
+  assets/                    App icons, splash screen
+  app.json                   Expo config
+```
+
+## Adding Screens
+
+Create files in `app/`. Expo Router uses file-based routing.
+
+```tsx
+// app/profile.tsx
+import { View, Text } from "react-native";
+
+export default function ProfileScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <Text>Profile</Text>
+    </View>
+  );
+}
+```
+
+### Dynamic routes
+
+```tsx
+// app/users/[id].tsx
+import { View, Text, ActivityIndicator } from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { api } from "../../lib/api";
+
+export default function UserScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const user = api.useQuery("/users/:id", "$get", { param: { id } });
+
+  if (user.isLoading) return <ActivityIndicator />;
+
+  return (
+    <View style={{ flex: 1, padding: 16 }}>
+      <Text style={{ fontSize: 24 }}>{user.data?.data.name}</Text>
+    </View>
+  );
+}
+```
+
+### Layouts and navigation
+
+```tsx
+// app/_layout.tsx
+import { Stack } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <Stack />
+      </QueryClientProvider>
+    </SafeAreaProvider>
+  );
+}
+```
+
+Tab navigation:
+
+```tsx
+// app/(tabs)/_layout.tsx
+import { Tabs } from "expo-router";
+
+export default function TabLayout() {
+  return (
+    <Tabs>
+      <Tabs.Screen name="index" options={{ title: "Home" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
+    </Tabs>
+  );
+}
+```
+
+## Typed API Client
+
+Same pattern as web. The client is in `lib/api.ts`.
+
+```tsx
+import { api } from "../lib/api";
+
+// Queries
+const users = api.useQuery("/users", "$get", {});
+
+// Mutations
+const createUser = api.useMutation("/users", "$post");
+createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
+```
+
+## API Base URL
+
+The mobile app needs the API URL to be reachable from the device/simulator:
+
+- **iOS Simulator:** `http://localhost:3000` works.
+- **Android Emulator:** Use `http://10.0.2.2:3000` (Android's alias for host localhost).
+- **Physical device:** Use your machine's LAN IP, e.g. `http://192.168.1.x:3000`.
+
+Update `lib/api.ts` if needed:
+
+```ts
+import { Platform } from "react-native";
+
+const baseUrl = Platform.select({
+  android: "http://10.0.2.2:3000",
+  default: "http://localhost:3000",
+});
+
+export const api = createReactQueryClient<AppType>({ baseUrl });
+```
+
+## Running
+
+```bash
+cd packages/mobile
+bun start              # Expo dev server
+bun run ios            # iOS simulator
+bun run android        # Android emulator
+```
+
+Requires: Xcode (iOS), Android Studio (Android), or Expo Go on a physical device.
