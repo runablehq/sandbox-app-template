@@ -1,14 +1,6 @@
-import { Hono } from "hono";
+import app from "./src/app";
 
-const app = new Hono();
-
-app.get("/", (c) => {
-  return c.json({ message: "Hello from Hono!" });
-});
-
-app.get("/health", (c) => {
-  return c.json({ status: "ok" });
-});
+export type { AppType } from "./src/app";
 
 export default {
   port: 3000,
