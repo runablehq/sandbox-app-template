@@ -1,15 +1,12 @@
 # sandbox-platform-template
 
-To install dependencies:
+## Environment Variables
 
-```bash
-bun install
-```
+All environment variables are defined in `.env` files at the project root.
 
-To run:
+| Prefix | Scope | Example |
+| ------ | ----- | ------- |
+| `VITE_` | **Public** — exposed to web, desktop, and mobile clients | `VITE_API_URL`, `VITE_POSTHOG_KEY` |
+| _(none)_ | **Private** — available only in `packages/api` | `DATABASE_URL`, `JWT_SECRET` |
 
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.5. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+> **Rule of thumb:** If a value is safe to ship in a client bundle, prefix it with `VITE_`. Everything else stays unprefixed and is only accessible server-side in the API.
