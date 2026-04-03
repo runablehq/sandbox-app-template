@@ -1,5 +1,5 @@
 {
-  "name": "sandbox-platform-template",
+  "name": "sandbox-app-template",
   "private": true,
   "packageManager": "bun@1.3.5",
   "workspaces": ["packages/*"],
