@@ -1,24 +1,27 @@
 # sandbox-platform-template
 
+## App Config
+
+All service configuration lives in `app.config.json` at the project root. This is the single source of truth for service names, ports, and dev commands — used by the agent, UI preview buttons, and the services themselves.
+
 ## Environment Variables
 
-All environment variables are defined in `.env` at the project root. Bun, Vite, and Expo all load it automatically.
+Secrets and credentials live in `.env` at the project root (gitignored). Bun, Vite, and Expo all load it automatically.
 
-### Service Ports
-
-| Variable | Default | Used by |
-| --- | --- | --- |
-| `VITE_API_PORT` | `3000` | `packages/api`, `packages/web`, `packages/mobile` |
-| `WEB_PORT` | `5173` | `packages/desktop` (Electron dev URL) |
-| `DESKTOP_PORT` | `5174` | `packages/desktop` |
-| `MOBILE_PORT` | `8081` | `packages/mobile` |
-
-### Secrets
-
-| Variable | Scope | Description |
-| --- | --- | --- |
-| `TURSO_TOKEN` | Private | Turso platform API token |
-| `CLOUDFLARE_API_TOKEN` | Private | Cloudflare API token (R2 + API Tokens) |
-| `CLOUDFLARE_ACCOUNT_ID` | Private | Cloudflare account ID |
+| Variable | Description |
+| --- | --- |
+| `TURSO_TOKEN` | Turso platform API token |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token (R2 + API Tokens) |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 
 > **Rule of thumb:** If a value is safe to ship in a client bundle, prefix it with `VITE_`. Everything else stays unprefixed and is only accessible server-side.
+
+## Dev Commands
+
+```sh
+bun run dev            # start everything
+bun run dev:api        # just the API
+bun run dev:web        # just the web app
+bun run dev:desktop    # just the desktop app
+bun run dev:mobile     # just the mobile app
+```

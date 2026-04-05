@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import path from "node:path";
 import electron from "vite-plugin-electron/simple";
+import appConfig from "../../app.config.json";
 
 export default defineConfig({
   plugins: [
@@ -13,4 +14,7 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    port: appConfig.services.desktop.port,
+  },
 });

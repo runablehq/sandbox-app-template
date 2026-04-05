@@ -1,8 +1,9 @@
 import app from "./src/app";
+import appConfig from "../../app.config.json";
 
 export type { AppType } from "./src/app";
 
 export default {
-  port: Number(process.env.VITE_API_PORT) || 3000,
+  port: appConfig.services.api.port,
   fetch: app.fetch,
 };
