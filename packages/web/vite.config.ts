@@ -4,7 +4,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import appConfig from "../../app.config.json";
 
 export default defineConfig({
-  plugins: [TanStackRouter({ quoteStyle: "double" }), react()],
+  plugins: [tanstackRouter({ quoteStyle: "double" }), react()],
   server: {
     port: appConfig.services.web.port,
   },
