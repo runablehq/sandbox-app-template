@@ -2,11 +2,23 @@
 
 ## Environment Variables
 
-All environment variables are defined in `.env` files at the project root.
+All environment variables are defined in `.env` at the project root. Bun, Vite, and Expo all load it automatically.
 
-| Prefix | Scope | Example |
-| ------ | ----- | ------- |
-| `VITE_` | **Public** — exposed to web, desktop, and mobile clients | `VITE_API_URL`, `VITE_POSTHOG_KEY` |
-| _(none)_ | **Private** — available only in `packages/api` | `DATABASE_URL`, `JWT_SECRET` |
+### Service Ports
 
-> **Rule of thumb:** If a value is safe to ship in a client bundle, prefix it with `VITE_`. Everything else stays unprefixed and is only accessible server-side in the API.
+| Variable | Default | Used by |
+| --- | --- | --- |
+| `VITE_API_PORT` | `3000` | `packages/api`, `packages/web`, `packages/mobile` |
+| `WEB_PORT` | `5173` | `packages/desktop` (Electron dev URL) |
+| `DESKTOP_PORT` | `5174` | `packages/desktop` |
+| `MOBILE_PORT` | `8081` | `packages/mobile` |
+
+### Secrets
+
+| Variable | Scope | Description |
+| --- | --- | --- |
+| `TURSO_TOKEN` | Private | Turso platform API token |
+| `CLOUDFLARE_API_TOKEN` | Private | Cloudflare API token (R2 + API Tokens) |
+| `CLOUDFLARE_ACCOUNT_ID` | Private | Cloudflare account ID |
+
+> **Rule of thumb:** If a value is safe to ship in a client bundle, prefix it with `VITE_`. Everything else stays unprefixed and is only accessible server-side.
