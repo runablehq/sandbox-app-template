@@ -5,6 +5,10 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "dev": "turbo dev",
+    "dev:api": "turbo dev --filter=@template/api",
+    "dev:web": "turbo dev --filter=@template/web",
+    "dev:desktop": "turbo dev --filter=@template/desktop",
+    "dev:mobile": "turbo dev --filter=@template/mobile",
     "build": "turbo build",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
