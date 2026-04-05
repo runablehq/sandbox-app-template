@@ -111,6 +111,8 @@ const app = new Hono()
 
 ## 5. Web Chat UI
 
+The API URL uses `__APP_CONFIG__` which is injected by Vite from `app.config.json`:
+
 ```tsx
 // packages/web/src/routes/chat.tsx
 import { createFileRoute } from "@tanstack/react-router";
@@ -128,8 +130,9 @@ function MessagePart({ part }: { part: UIMessage["parts"][number] }) {
 }
 
 function ChatPage() {
+  const apiPort = __APP_CONFIG__.services.api.port;
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "http://localhost:3000/agent/messages" }),
+    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/agent/messages` }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";
@@ -173,10 +176,12 @@ import { View, TextInput, FlatList, Text, Pressable, KeyboardAvoidingView, Platf
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
+import appConfig from "../../app.config.json";
 
 export default function ChatScreen() {
+  const apiPort = appConfig.services.api.port;
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: "http://localhost:3000/agent/messages" }),
+    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/agent/messages` }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";

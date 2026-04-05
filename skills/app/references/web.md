@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/web` is a React + Vite app with TanStack Router (file-based routing) and typed API calls via `@softnetics/hono-react-query`.
+`packages/web` is a React + Vite app with TanStack Router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. Port is set in `app.config.json` and injected via `vite.config.ts`.
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
@@ -22,7 +22,7 @@ packages/web/
     hooks/
       use-desktop.ts         Desktop detection hook
     lib/
-      api.ts                 Typed API client (createReactQueryClient<AppType>)
+      api.ts                 Typed API client
       desktop.ts             ElectronAPI types + detection helpers
   index.html
   vite.config.ts
@@ -87,7 +87,7 @@ export const Route = createRootRoute({
 
 ## Typed API Client
 
-The API client is already set up in `src/lib/api.ts`. It uses the `AppType` exported from `packages/api`.
+The API client is set up in `src/lib/api.ts`. The API port comes from `app.config.json` via Vite's `define` (available as `__APP_CONFIG__` at build time).
 
 ### Queries
 
@@ -136,7 +136,6 @@ function SaveButton({ data }: { data: string }) {
       const path = await desktop.showSaveDialog({ title: "Save file" });
       if (path) await desktop.writeFile(path, data);
     } else {
-      // Browser download fallback
       const blob = new Blob([data], { type: "text/plain" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -151,11 +150,3 @@ function SaveButton({ data }: { data: string }) {
 ```
 
 Available desktop APIs: `showOpenDialog`, `showSaveDialog`, `readFile`, `writeFile`, `showNotification`, `minimize`, `maximize`, `close`, `onDeepLink`. See `src/lib/desktop.ts` for full types.
-
-## Running
-
-```bash
-cd packages/web
-bun dev          # Vite dev server on :5173
-bun run build    # Production build
-```

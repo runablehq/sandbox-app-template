@@ -1,10 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import appConfig from "../../app.config.json";
 
 export default defineConfig({
-  plugins: [TanStackRouterVite({ quoteStyle: "double" }), react()],
+  plugins: [TanStackRouter({ quoteStyle: "double" }), react()],
   server: {
     port: appConfig.services.web.port,
   },

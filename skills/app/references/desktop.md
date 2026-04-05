@@ -12,11 +12,11 @@ packages/desktop/
     main.ts              Electron main process (window, IPC handlers)
     preload.ts           contextBridge: exposes typed API to renderer as window.electronAPI
     electron-env.d.ts    Environment type declarations
-  vite.config.ts         Builds main + preload only (no renderer)
+  vite.config.ts         Builds main + preload only (no renderer), port from app.config.json
   electron-builder.json5 Packaging config
 ```
 
-In **dev**, the main process loads `http://localhost:5173` (the web dev server).
+In **dev**, the main process loads the web dev server (port from `app.config.json`).
 In **production**, it loads the built web app copied into `web-dist/`.
 
 ## Adding a Native Feature
@@ -105,10 +105,11 @@ Configure `electron-builder.json5` for app name, icons, and platform targets (DM
 
 ## Running
 
+Desktop requires the web dev server to be running first:
+
 ```bash
-# Requires web dev server to be running first
-cd packages/web && bun dev &
-cd packages/desktop && bun dev
+bun run dev:web &
+bun run dev:desktop
 ```
 
 Or from root: `turbo dev` starts both.

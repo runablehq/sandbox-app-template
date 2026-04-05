@@ -2,10 +2,10 @@
 
 ## Overview
 
-`packages/api` is a Hono server running on Bun (port 3000) with Drizzle ORM + Turso (SQLite).
+`packages/api` is a Hono server running on Bun with Drizzle ORM + Turso (SQLite). The port is defined in `app.config.json`.
 
 Two entry points:
-- `index.ts` — server entry (`bun --hot index.ts`)
+- `index.ts` — server entry (reads port from `app.config.json`)
 - `src/app.ts` — app definition + `AppType` export (consumed by web/mobile as a package)
 
 ## Adding API Routes
@@ -126,11 +126,3 @@ const app = new Hono()
 API-only (unprefixed): `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`, `AI_GATEWAY_BASE_URL`, `AI_GATEWAY_API_KEY`, `AUTUMN_SECRET_KEY`.
 
 Bun loads `.env` automatically — no dotenv needed.
-
-## Running
-
-```bash
-cd packages/api
-bun dev          # Hot-reload dev server on :3000
-bun start        # Production start
-```

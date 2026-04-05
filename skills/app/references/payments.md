@@ -187,7 +187,3 @@ import { autumnHandler } from "autumn-js/hono";
 ## CLI Commands
 
 `atmn init` | `atmn login` | `atmn push` (`-p` for prod, `-y` to confirm) | `atmn pull` | `atmn nuke` | `atmn env` | `atmn dashboard`
-
-## Note on API Keys
-
-`AUTUMN_SECRET_KEY` is defined in `.env.template`. Payments work with pre-configured sandbox keys.

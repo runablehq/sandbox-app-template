@@ -16,6 +16,8 @@ Monorepo: Bun workspaces + Turborepo.
 
 Typed end-to-end: API exports `AppType`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
 
+Ports are defined in `app.config.json` at the project root — never hardcode them.
+
 ## Preflight
 
 1. Ask questions: what the app does, which platforms (web, mobile, desktop, or all), key features, data model, auth/payment needs.
@@ -27,7 +29,7 @@ Do not start implementation until the user approves or adjusts the plan.
 
 1. Run preflight.
 2. Call `app_init` with absolute `app_path`, `name`, `description`. **Do NOT create the directory beforehand** — `app_init` creates it and fails if it already exists.
-3. Read `README.md` in the created directory for project structure and tech reference.
+3. Read `README.md` and `app.config.json` in the created directory for project structure and assigned ports.
 4. Build API routes, database schema, pages/screens, components.
 5. Call `deliver` with `type: app`, app folder path at index 0.
 
@@ -36,20 +38,22 @@ Do not start implementation until the user approves or adjusts the plan.
 - **All API routes must be chained** on the same `app` instance in `packages/api/src/app.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
 - **Desktop has no UI of its own.** It loads the web app. Desktop-specific features are exposed via IPC bridge and used conditionally with `useDesktop()`.
-- **Environment variables:** Unprefixed = API-only. `VITE_` prefix = exposed to web/desktop clients. Mobile reads from Expo config or constants.
 - **Bun loads `.env` automatically** — no dotenv needed.
+- **Ports come from `app.config.json`** — read them at runtime, never hardcode.
 
 ### Preview
+
+Read `app.config.json` for the assigned port per service, then:
 
 ```bash
 # All packages from root
 turbo dev
 
-# Individual packages
-cd packages/api && bun dev          # API on :3000
-cd packages/web && bun dev          # Web on :5173
-cd packages/mobile && bun start     # Expo dev server
-cd packages/desktop && bun dev      # Electron (loads web on :5173)
+# Individual packages — use the dev command from app.config.json
+bun run dev:api
+bun run dev:web
+bun run dev:mobile
+bun run dev:desktop    # requires web running first
 ```
 
 ### Database

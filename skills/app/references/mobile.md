@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API port is read from `app.config.json`.
 
 ## Project Structure
 
@@ -16,7 +16,7 @@ packages/mobile/
       index.tsx              /users screen
       [id].tsx               /users/:id screen
   lib/
-    api.ts                   Typed API client (createReactQueryClient<AppType>)
+    api.ts                   Typed API client
   assets/                    App icons, splash screen
   app.json                   Expo config
 ```
@@ -99,7 +99,7 @@ export default function TabLayout() {
 
 ## Typed API Client
 
-Same pattern as web. The client is in `lib/api.ts`.
+Same pattern as web. The client is in `lib/api.ts` and reads the API port from `app.config.json`.
 
 ```tsx
 import { api } from "../lib/api";
@@ -116,18 +116,21 @@ createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
 
 The mobile app needs the API URL to be reachable from the device/simulator:
 
-- **iOS Simulator:** `http://localhost:3000` works.
-- **Android Emulator:** Use `http://10.0.2.2:3000` (Android's alias for host localhost).
-- **Physical device:** Use your machine's LAN IP, e.g. `http://192.168.1.x:3000`.
+- **iOS Simulator:** `http://localhost:<port>` works.
+- **Android Emulator:** Use `http://10.0.2.2:<port>` (Android's alias for host localhost).
+- **Physical device:** Use your machine's LAN IP.
 
 Update `lib/api.ts` if needed:
 
 ```ts
 import { Platform } from "react-native";
+import appConfig from "../../app.config.json";
+
+const apiPort = appConfig.services.api.port;
 
 const baseUrl = Platform.select({
-  android: "http://10.0.2.2:3000",
-  default: "http://localhost:3000",
+  android: `http://10.0.2.2:${apiPort}`,
+  default: `http://localhost:${apiPort}`,
 });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });
@@ -141,5 +144,3 @@ bun start              # Expo dev server
 bun run ios            # iOS simulator
 bun run android        # Android emulator
 ```
-
-Requires: Xcode (iOS), Android Studio (Android), or Expo Go on a physical device.

@@ -20,12 +20,13 @@ cd packages/mobile && bun add better-auth@1.4.22
 
 ## 2. Auth Config
 
-Create `packages/api/src/auth.ts`:
+Create `packages/api/src/auth.ts`. Read API port from `app.config.json` for `trustedOrigins`:
 
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
+import appConfig from "../../app.config.json";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -35,7 +36,10 @@ export const auth = betterAuth({
     enabled: true,
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: ["http://localhost:5173", "http://localhost:3000"],
+  trustedOrigins: [
+    `http://localhost:${appConfig.services.web.port}`,
+    `http://localhost:${appConfig.services.api.port}`,
+  ],
 });
 ```
 
@@ -90,7 +94,7 @@ Create `packages/web/src/lib/auth.ts`:
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:3000",
+  baseURL: `http://localhost:${__APP_CONFIG__.services.api.port}`,
 });
 ```
 
@@ -118,9 +122,10 @@ Create `packages/mobile/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
+import appConfig from "../../app.config.json";
 
 export const authClient = createAuthClient({
-  baseURL: "http://localhost:3000",
+  baseURL: `http://localhost:${appConfig.services.api.port}`,
 });
 ```
 
