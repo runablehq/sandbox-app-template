@@ -8,15 +8,16 @@ Before wiring, state your assumptions about the agent's persona, which model to 
 
 ## Supported Models
 
-- `anthropic/claude-sonnet-4.5`
+- `anthropic/claude-opus-4.6`
+- `anthropic/claude-sonnet-4.6`
 - `anthropic/claude-haiku-4.5`
-- `anthropic/claude-opus-4.5`
-- `openai/gpt-5.2`
-- `openai/gpt-5-nano`
-- `openai/gpt-5-mini`
-- `google/gemini-3-pro-preview`
-- `google/gemini-3-pro-image`
-- `google/gemini-2.5-flash-image`
+- `openai/gpt-5.4`
+- `openai/gpt-5.4-mini`
+- `openai/gpt-5.4-nano`
+- `google/gemini-3-flash`
+- `google/gemini-2.5-flash-lite`
+- `xai/grok-4.1-fast-non-reasoning`
+- `deepseek/deepseek-v3.2`
 
 ## 1. Install
 
@@ -48,7 +49,7 @@ const INSTRUCTIONS: SystemModelMessage[] = [
 ];
 
 export const agent = new ToolLoopAgent({
-  model: openai.chat("anthropic/claude-haiku-4.5"),
+  model: openai.chat("anthropic/claude-sonnet-4.6"),
   instructions: INSTRUCTIONS,
   tools: {},
   stopWhen: [stepCountIs(100)],
