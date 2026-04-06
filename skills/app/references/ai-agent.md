@@ -15,9 +15,9 @@ Before wiring, state your assumptions about the agent's persona, which model to 
 - `openai/gpt-5.4-mini`
 - `openai/gpt-5.4-nano`
 - `google/gemini-3-flash`
-- `google/gemini-2.5-flash-lite`
-- `xai/grok-4.1-fast-non-reasoning`
-- `deepseek/deepseek-v3.2`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+- `google/gemini-3-pro-image`
 
 ## 1. Install
 
