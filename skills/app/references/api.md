@@ -4,20 +4,20 @@
 
 `packages/web` runs a single Bun.serve process that serves both the Hono API (under `/api`) and the web frontend (via Bun's HTML imports). The port is defined in `app.config.json`.
 
-- `index.ts` — server entry. Imports the web HTML and the Hono app, mounts API at `/api/*` with URL rewriting, and serves the web SPA at `/*`.
-- `src/app.ts` — Hono app definition + `AppType` export (consumed by frontend and mobile as a package)
+- `src/index.ts` — server entry. Imports the web HTML and the Hono app, mounts API at `/api/*` with URL rewriting, and serves the web SPA at `/*`.
+- `src/api/app.ts` — Hono app definition + `AppType` export (consumed by frontend and mobile as a package)
 
-**Routes in `src/app.ts` are defined without the `/api` prefix.** The prefix is applied by `index.ts` at the routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
+**Routes in `src/api/app.ts` are defined without the `/api` prefix.** The prefix is applied by `src/index.ts` at the routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
 
 ## Adding API Routes
 
-All routes **must** be chained on the same `app` instance in `src/app.ts`. Breaking the chain breaks type inference for consumers.
+All routes **must** be chained on the same `app` instance in `src/api/app.ts`. Breaking the chain breaks type inference for consumers.
 
 ```ts
-// src/app.ts
+// src/api/app.ts
 import { Hono } from "hono";
-import { db } from "./db";
-import * as schema from "./db/schema";
+import { db } from "./database";
+import * as schema from "./database/schema";
 
 const app = new Hono()
   .get("/health", (c) => c.json({ status: "ok" }, 200))
@@ -42,7 +42,7 @@ export default app;
 For larger APIs, use Hono's `.route()` to compose sub-routers. Each sub-router must also be chained:
 
 ```ts
-// src/routes/users.ts
+// src/api/routes/users.ts
 import { Hono } from "hono";
 
 export const users = new Hono()
@@ -50,7 +50,7 @@ export const users = new Hono()
   .post("/", async (c) => { /* create */ })
   .get("/:id", async (c) => { /* get by id */ });
 
-// src/app.ts
+// src/api/app.ts
 import { users } from "./routes/users";
 
 const app = new Hono()
@@ -60,11 +60,11 @@ const app = new Hono()
 
 ## Server Entry Point
 
-`index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA:
+`src/index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA:
 
 ```ts
-import app from "./src/app";
-import homepage from "./index.html";
+import app from "./api/app";
+import homepage from "./client/index.html";
 
 Bun.serve({
   port: 3000,
@@ -88,11 +88,11 @@ Bun.serve({
 });
 ```
 
-The URL rewriting strips the `/api` prefix before passing to Hono, so routes in `src/app.ts` are defined without it.
+The URL rewriting strips the `/api` prefix before passing to Hono, so routes in `src/api/app.ts` are defined without it.
 
 ## Database Schema
 
-Define tables in `packages/web/src/db/schema.ts`:
+Define tables in `packages/web/src/api/database/schema.ts`:
 
 ```ts
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
@@ -120,8 +120,8 @@ bun run db:studio      # Open Drizzle Studio
 ## Using the Database
 
 ```ts
-import { db } from "./db";
-import * as schema from "./db/schema";
+import { db } from "./database";
+import * as schema from "./database/schema";
 import { eq } from "drizzle-orm";
 
 // Select

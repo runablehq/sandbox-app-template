@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 ```
 
-### 3. Add type in `packages/web/web/lib/desktop.ts`
+### 3. Add type in `packages/web/src/client/lib/desktop.ts`
 
 ```ts
 export interface ElectronAPI {

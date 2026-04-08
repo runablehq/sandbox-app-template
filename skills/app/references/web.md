@@ -2,7 +2,7 @@
 
 ## Overview
 
-The web frontend lives in `packages/web/web/` and is served by the same Bun.serve process as the API. Bun's HTML imports handle bundling, HMR, and serving — no separate dev server needed. Uses React, TanStack Router (file-based routing), and typed API calls via `@softnetics/hono-react-query`.
+The web frontend lives in `packages/web/src/client/` and is served by the same Bun.serve process as the API. Bun's HTML imports handle bundling, HMR, and serving — no separate dev server needed. Uses React, TanStack Router (file-based routing), and typed API calls via `@softnetics/hono-react-query`.
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
@@ -10,31 +10,33 @@ This is the **single UI codebase** — it also runs inside the desktop Electron 
 
 ```
 packages/web/
-  index.ts                       Server entry (Bun.serve — API + web)
-  index.html                     Frontend HTML entry (imported by index.ts)
-  src/                           API source
-    app.ts                       Hono routes + AppType export
-    db/                          Database (schema, client)
-  web/                      Frontend source
-    main.tsx                     App entry (QueryClientProvider + RouterProvider)
-    routeTree.gen.ts             Generated route tree
-    routes/
-      __root.tsx                 Root layout (wraps all pages)
-      index.tsx                  / page
-      about.tsx                  /about page
-      users/
-        index.tsx                /users page
-        $id.tsx                  /users/:id page
-    hooks/
-      use-desktop.ts             Desktop detection hook
-    lib/
-      api.ts                     Typed API client (baseUrl: "/api")
-      desktop.ts                 ElectronAPI types + detection helpers
+  public/                        Static assets (favicon, images, fonts)
+  src/
+    index.ts                     Server entry (Bun.serve — API + web)
+    api/                         Backend source
+      app.ts                     Hono routes + AppType export
+      database/                  Database (schema, client)
+    client/                      Frontend source
+      index.html                 Frontend HTML entry (imported by src/index.ts)
+      main.tsx                   App entry (QueryClientProvider + RouterProvider)
+      routeTree.gen.ts           Generated route tree
+      routes/
+        __root.tsx               Root layout (wraps all pages)
+        index.tsx                / page
+        about.tsx                /about page
+        users/
+          index.tsx              /users page
+          $id.tsx                /users/:id page
+      hooks/
+        use-desktop.ts           Desktop detection hook
+      lib/
+        api.ts                   Typed API client (baseUrl: "/api")
+        desktop.ts               ElectronAPI types + detection helpers
 ```
 
 ## Adding Pages
 
-Create files in `web/routes/`. TanStack Router uses file-based routing.
+Create files in `src/client/routes/`. TanStack Router uses file-based routing.
 
 After adding a new route file, regenerate the route tree:
 
@@ -43,7 +45,7 @@ cd packages/web && bunx @tanstack/router-cli generate
 ```
 
 ```tsx
-// web/routes/about.tsx
+// src/client/routes/about.tsx
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/about")({
@@ -58,7 +60,7 @@ function AboutPage() {
 ### Dynamic routes
 
 ```tsx
-// web/routes/users/$id.tsx
+// src/client/routes/users/$id.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "../../lib/api";
 
@@ -79,7 +81,7 @@ function UserPage() {
 ### Layout routes
 
 ```tsx
-// web/routes/__root.tsx
+// src/client/routes/__root.tsx
 import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
 
 export const Route = createRootRoute({
@@ -97,7 +99,7 @@ export const Route = createRootRoute({
 
 ## Typed API Client
 
-The API client is set up in `web/lib/api.ts` with a relative baseUrl of `/api` (same origin):
+The API client is set up in `src/client/lib/api.ts` with a relative baseUrl of `/api` (same origin):
 
 ```ts
 import { createReactQueryClient } from "@softnetics/hono-react-query";
@@ -168,4 +170,4 @@ function SaveButton({ data }: { data: string }) {
 }
 ```
 
-Available desktop APIs: `showOpenDialog`, `showSaveDialog`, `readFile`, `writeFile`, `showNotification`, `minimize`, `maximize`, `close`, `onDeepLink`. See `web/lib/desktop.ts` for full types.
+Available desktop APIs: `showOpenDialog`, `showSaveDialog`, `readFile`, `writeFile`, `showNotification`, `minimize`, `maximize`, `close`, `onDeepLink`. See `src/client/lib/desktop.ts` for full types.

@@ -53,7 +53,7 @@ Then import and re-export from `src/db/schema.ts`, and run `bun run db:push`.
 
 ## 4. Mount Auth Routes
 
-In `packages/web/src/app.ts`. Note: routes are defined without `/api` prefix (it's stripped by `index.ts`):
+In `packages/web/src/api/app.ts`. Note: routes are defined without `/api` prefix (it's stripped by `src/index.ts`):
 
 ```ts
 import { auth } from "./auth";
@@ -89,7 +89,7 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 ## 6. Web Auth Client
 
-Create `packages/web/web/lib/auth.ts`. Since web and API are same origin, use a relative base URL:
+Create `packages/web/src/client/lib/auth.ts`. Since web and API are same origin, use a relative base URL:
 
 ```ts
 import { createAuthClient } from "better-auth/react";

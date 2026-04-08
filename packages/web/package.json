@@ -1,17 +1,17 @@
 {
   "name": "@template/web",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
   "exports": {
     ".": {
-      "types": "./src/app.ts",
-      "import": "./src/app.ts"
+      "types": "./src/api/app.ts",
+      "import": "./src/api/app.ts"
     }
   },
   "scripts": {
-    "dev": "bun --hot index.ts",
-    "start": "bun index.ts",
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

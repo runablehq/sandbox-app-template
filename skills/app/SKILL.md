@@ -10,8 +10,8 @@ description: Use for any app creation task — planning, implementing pages, scr
 Monorepo: Bun workspaces + Turborepo.
 
 - **Server:** Bun.serve — serves both the Hono API (under `/api`) and the web frontend (via HTML imports) from a single process in `packages/web`
-- **API:** Hono, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/`
-- **Web Frontend:** React + TanStack Router, bundled by Bun's HTML imports — source in `packages/web/web/`
+- **API:** Hono, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
+- **Web Frontend:** React + TanStack Router, bundled by Bun's HTML imports — source in `packages/web/src/client/`
 - **Mobile:** Expo + React Native + expo-router
 - **Desktop:** Electron shell (loads the web app from the server, exposes native APIs via IPC)
 
@@ -36,9 +36,9 @@ Do not start implementation until the user approves or adjusts the plan.
 
 ### Key Rules
 
-- **All API routes must be chained** on the same `app` instance in `packages/web/src/app.ts`. Breaking the chain breaks type inference.
+- **All API routes must be chained** on the same `app` instance in `packages/web/src/api/app.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
-- **Routes in `src/app.ts` are defined without `/api` prefix.** The prefix is applied by `index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
+- **Routes in `src/api/app.ts` are defined without `/api` prefix.** The prefix is applied by `src/index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
 - **Desktop has no UI of its own.** It loads the web app. Desktop-specific features are exposed via IPC bridge and used conditionally with `useDesktop()`.
 - **Bun loads `.env` automatically** — no dotenv needed.
 - **Port comes from `app.config.json`** — read it at runtime, never hardcode.

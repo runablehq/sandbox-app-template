@@ -28,5 +28,5 @@
 
     "types": ["bun-types"]
   },
-  "include": ["src", "web", "index.ts"]
+  "include": ["src"]
 }

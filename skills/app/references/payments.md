@@ -71,7 +71,7 @@ Push to Autumn: `atmn push -y`
 
 ## 3. Provider Setup (Web)
 
-In `packages/web/web/main.tsx`, wrap with `AutumnProvider`:
+In `packages/web/src/client/main.tsx`, wrap with `AutumnProvider`:
 
 ```tsx
 import { AutumnProvider } from "autumn-js/react";
@@ -169,7 +169,7 @@ await autumn.track({
 
 ## 8. Backend Handler (non-Better-Auth)
 
-If not using Better Auth, mount `autumnHandler`. Note: routes are defined without `/api` prefix (it's applied by `index.ts`):
+If not using Better Auth, mount `autumnHandler`. Note: routes are defined without `/api` prefix (it's applied by `src/index.ts`):
 
 ```ts
 import { autumnHandler } from "autumn-js/hono";

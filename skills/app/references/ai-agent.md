@@ -28,7 +28,7 @@ cd packages/mobile && bun add @ai-sdk/react ai
 
 ## 2. Agent Config
 
-Create `packages/web/src/agent/index.ts`:
+Create `packages/web/src/api/agent/index.ts`:
 
 ```ts
 import { stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
@@ -95,7 +95,7 @@ export const agent = new ToolLoopAgent({
 
 ## 4. API Route
 
-Add agent route to `packages/web/src/app.ts` (no `/api` prefix — it's applied by `index.ts`):
+Add agent route to `packages/web/src/api/app.ts` (no `/api` prefix — it's applied by `src/index.ts`):
 
 ```ts
 import { createAgentUIStreamResponse } from "ai";
@@ -116,7 +116,7 @@ The endpoint is accessible at `/api/agent/messages`.
 The API is on the same origin, so use a relative URL:
 
 ```tsx
-// packages/web/web/routes/chat.tsx
+// packages/web/src/client/routes/chat.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
