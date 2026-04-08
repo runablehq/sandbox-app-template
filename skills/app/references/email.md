@@ -1,6 +1,6 @@
 # Email
 
-Send transactional emails from the API server. Use any email provider — examples below use Resend, but the pattern applies to any HTTP-based email API.
+Send transactional emails from the server. Use any email provider — examples below use Resend, but the pattern applies to any HTTP-based email API.
 
 <preflight>
 Before wiring, state your assumptions about what emails need to be sent (welcome, notifications, password resets), who the recipients are, and whether HTML templates are needed. The user will correct what's wrong.
@@ -9,7 +9,7 @@ Before wiring, state your assumptions about what emails need to be sent (welcome
 ## 1. Install
 
 ```bash
-cd packages/api && bun add resend
+cd packages/web && bun add resend
 ```
 
 ## 2. Add Environment Variable
@@ -22,7 +22,7 @@ RESEND_API_KEY=
 
 ## 3. Email Service
 
-Create `packages/api/src/services/email.ts`:
+Create `packages/web/src/services/email.ts`:
 
 ```ts
 import { Resend } from "resend";

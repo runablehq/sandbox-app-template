@@ -13,14 +13,13 @@ Before wiring, state your assumptions about which auth methods are needed (email
 ## 1. Install
 
 ```bash
-cd packages/api && bun add better-auth@1.4.22
 cd packages/web && bun add better-auth@1.4.22
 cd packages/mobile && bun add better-auth@1.4.22
 ```
 
 ## 2. Auth Config
 
-Create `packages/api/src/auth.ts`. Read API port from `app.config.json` for `trustedOrigins`:
+Create `packages/web/src/auth.ts`. Since the API and web are served from the same origin, `trustedOrigins` only needs the server URL. Set `basePath` to `/auth` because the Hono app receives requests with the `/api` prefix already stripped:
 
 ```ts
 import { betterAuth } from "better-auth";
@@ -29,6 +28,7 @@ import { db } from "./db";
 import appConfig from "../../app.config.json";
 
 export const auth = betterAuth({
+  basePath: "/auth",
   database: drizzleAdapter(db, {
     provider: "sqlite",
   }),
@@ -37,7 +37,6 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [
-    `http://localhost:${appConfig.services.web.port}`,
     `http://localhost:${appConfig.services.api.port}`,
   ],
 });
@@ -46,7 +45,7 @@ export const auth = betterAuth({
 ## 3. Generate Auth Schema
 
 ```bash
-cd packages/api
+cd packages/web
 bun x @better-auth/cli@latest generate --config=./src/auth.ts --output=./src/db/auth-schema.ts -y
 ```
 
@@ -54,19 +53,21 @@ Then import and re-export from `src/db/schema.ts`, and run `bun run db:push`.
 
 ## 4. Mount Auth Routes
 
-In `packages/api/src/app.ts`:
+In `packages/web/src/app.ts`. Note: routes are defined without `/api` prefix (it's stripped by `index.ts`):
 
 ```ts
 import { auth } from "./auth";
 
 const app = new Hono()
-  .on(["POST", "GET"], "/api/auth/**", (c) => auth.handler(c.req.raw))
+  .on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw))
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 ```
 
+The auth endpoints are accessible at `/api/auth/**` from the browser.
+
 ## 5. Auth Middleware
 
-Create `packages/api/src/middleware/auth.ts`:
+Create `packages/web/src/middleware/auth.ts`:
 
 ```ts
 import { createMiddleware } from "hono/factory";
@@ -88,13 +89,14 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 ## 6. Web Auth Client
 
-Create `packages/web/src/lib/auth.ts`:
+Create `packages/web/web/lib/auth.ts`. Since web and API are same origin, use a relative base URL:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: `http://localhost:${__APP_CONFIG__.services.api.port}`,
+  baseURL: "/api",
+  basePath: "/auth",
 });
 ```
 
@@ -125,7 +127,8 @@ import { createAuthClient } from "better-auth/react";
 import appConfig from "../../app.config.json";
 
 export const authClient = createAuthClient({
-  baseURL: `http://localhost:${appConfig.services.api.port}`,
+  baseURL: `http://localhost:${appConfig.services.api.port}/api`,
+  basePath: "/auth",
 });
 ```
 
@@ -136,7 +139,7 @@ Same API as web — `authClient.signIn.email()`, `authClient.useSession()`, etc.
 ### Web (TanStack Router)
 
 ```tsx
-// src/routes/__root.tsx
+// web/routes/__root.tsx
 import { authClient } from "../lib/auth";
 
 export const Route = createRootRoute({

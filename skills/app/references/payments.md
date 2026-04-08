@@ -13,7 +13,6 @@ Before wiring, state your assumptions about which features to gate, pricing tier
 ## 1. Install
 
 ```bash
-cd packages/api && bun add autumn-js@1.2.0
 cd packages/web && bun add autumn-js@1.2.0
 cd packages/mobile && bun add autumn-js@1.2.0
 ```
@@ -72,7 +71,7 @@ Push to Autumn: `atmn push -y`
 
 ## 3. Provider Setup (Web)
 
-In `packages/web/src/main.tsx`, wrap with `AutumnProvider`:
+In `packages/web/web/main.tsx`, wrap with `AutumnProvider`:
 
 ```tsx
 import { AutumnProvider } from "autumn-js/react";
@@ -107,7 +106,7 @@ export default function RootLayout() {
 
 ## 5. Better Auth Plugin
 
-Add Autumn plugin in `packages/api/src/auth.ts`:
+Add Autumn plugin in `packages/web/src/auth.ts`:
 
 ```ts
 import { autumn } from "autumn-js/better-auth";
@@ -170,19 +169,21 @@ await autumn.track({
 
 ## 8. Backend Handler (non-Better-Auth)
 
-If not using Better Auth, mount `autumnHandler`:
+If not using Better Auth, mount `autumnHandler`. Note: routes are defined without `/api` prefix (it's applied by `index.ts`):
 
 ```ts
 import { autumnHandler } from "autumn-js/hono";
 
 // In app.ts chain:
-.all("/api/autumn/*", autumnHandler({
+.all("/autumn/*", autumnHandler({
   identify: async (c) => {
     const user = getUser(c);
     return { customerId: user.id };
   },
 }))
 ```
+
+The endpoint is accessible at `/api/autumn/*`.
 
 ## CLI Commands
 

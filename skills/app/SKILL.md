@@ -9,14 +9,15 @@ description: Use for any app creation task — planning, implementing pages, scr
 
 Monorepo: Bun workspaces + Turborepo.
 
-- **API:** Hono on Bun, Drizzle ORM + Turso (SQLite)
-- **Web:** React + Vite + TanStack Router
+- **Server:** Bun.serve — serves both the Hono API (under `/api`) and the web frontend (via HTML imports) from a single process in `packages/web`
+- **API:** Hono, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/`
+- **Web Frontend:** React + TanStack Router, bundled by Bun's HTML imports — source in `packages/web/web/`
 - **Mobile:** Expo + React Native + expo-router
-- **Desktop:** Electron shell (loads the web app, exposes native APIs via IPC)
+- **Desktop:** Electron shell (loads the web app from the server, exposes native APIs via IPC)
 
-Typed end-to-end: API exports `AppType`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
+Typed end-to-end: `packages/web` exports `AppType`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
 
-Ports are defined in `app.config.json` at the project root — never hardcode them.
+The server port is defined in `app.config.json` at the project root — never hardcode it.
 
 ## Preflight
 
@@ -35,31 +36,30 @@ Do not start implementation until the user approves or adjusts the plan.
 
 ### Key Rules
 
-- **All API routes must be chained** on the same `app` instance in `packages/api/src/app.ts`. Breaking the chain breaks type inference.
+- **All API routes must be chained** on the same `app` instance in `packages/web/src/app.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
+- **Routes in `src/app.ts` are defined without `/api` prefix.** The prefix is applied by `index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
 - **Desktop has no UI of its own.** It loads the web app. Desktop-specific features are exposed via IPC bridge and used conditionally with `useDesktop()`.
 - **Bun loads `.env` automatically** — no dotenv needed.
-- **Ports come from `app.config.json`** — read them at runtime, never hardcode.
+- **Port comes from `app.config.json`** — read it at runtime, never hardcode.
 
 ### Preview
 
-Read `app.config.json` for the assigned port per service, then:
+Read `app.config.json` for the server port, then:
 
 ```bash
-# All packages from root
-turbo dev
+# Start the server (API + web)
+bun run dev
 
-# Individual packages — use the dev command from app.config.json
-bun run dev:api
-bun run dev:web
+# Individual platforms
 bun run dev:mobile
-bun run dev:desktop    # requires web running first
+bun run dev:desktop    # requires server running first
 ```
 
 ### Database
 
 ```bash
-cd packages/api
+cd packages/web
 bun run db:push        # Push schema to database
 bun run db:generate    # Generate migration files
 bun run db:migrate     # Run migrations
@@ -86,4 +86,4 @@ For platform-specific patterns, consult the matching reference:
 
 ## Testing
 
-Before delivering, verify the app works. Start the dev servers, test key flows, confirm no console errors or broken layouts. Don't deliver a broken app.
+Before delivering, verify the app works. Start the dev server, test key flows, confirm no console errors or broken layouts. Don't deliver a broken app.

@@ -3,16 +3,10 @@
   "description": "Full-stack app template with web, desktop, mobile, and API",
   "services": {
     "api": {
-      "name": "API Server",
+      "name": "Server",
       "type": "api",
       "port": 3000,
-      "dev": "bun run dev:api"
-    },
-    "web": {
-      "name": "Web App",
-      "type": "web",
-      "port": 5173,
-      "dev": "bun run dev:web"
+      "dev": "bun run dev"
     },
     "desktop": {
       "name": "Desktop App",

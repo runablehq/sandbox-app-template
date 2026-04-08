@@ -2,11 +2,11 @@
   "name": "sandbox-app-template",
   "private": true,
   "packageManager": "bun@1.3.5",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "turbo dev",
-    "dev:api": "turbo dev --filter=@template/api",
-    "dev:web": "turbo dev --filter=@template/web",
+    "dev": "turbo dev --filter=@template/web",
     "dev:desktop": "turbo dev --filter=@template/desktop",
     "dev:mobile": "turbo dev --filter=@template/mobile",
     "build": "turbo build",

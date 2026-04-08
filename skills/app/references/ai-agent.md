@@ -22,14 +22,13 @@ Before wiring, state your assumptions about the agent's persona, which model to 
 ## 1. Install
 
 ```bash
-cd packages/api && bun add ai @ai-sdk/openai dedent
-cd packages/web && bun add @ai-sdk/react ai
+cd packages/web && bun add ai @ai-sdk/openai dedent @ai-sdk/react
 cd packages/mobile && bun add @ai-sdk/react ai
 ```
 
 ## 2. Agent Config
 
-Create `packages/api/src/agent/index.ts`:
+Create `packages/web/src/agent/index.ts`:
 
 ```ts
 import { stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
@@ -58,10 +57,10 @@ export const agent = new ToolLoopAgent({
 
 ## 3. Add Tools
 
-Create tools under `packages/api/src/agent/`.
+Create tools under `packages/web/src/agent/`.
 
 ```ts
-// packages/api/src/agent/calculate-tool.ts
+// packages/web/src/agent/calculate-tool.ts
 import z from "zod";
 import { evaluate } from "mathjs";
 import { tool, UIToolInvocation } from "ai";
@@ -96,7 +95,7 @@ export const agent = new ToolLoopAgent({
 
 ## 4. API Route
 
-Add agent route to `packages/api/src/app.ts`:
+Add agent route to `packages/web/src/app.ts` (no `/api` prefix — it's applied by `index.ts`):
 
 ```ts
 import { createAgentUIStreamResponse } from "ai";
@@ -110,12 +109,14 @@ const app = new Hono()
   });
 ```
 
+The endpoint is accessible at `/api/agent/messages`.
+
 ## 5. Web Chat UI
 
-The API URL uses `__APP_CONFIG__` which is injected by Vite from `app.config.json`:
+The API is on the same origin, so use a relative URL:
 
 ```tsx
-// packages/web/src/routes/chat.tsx
+// packages/web/web/routes/chat.tsx
 import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
@@ -131,9 +132,8 @@ function MessagePart({ part }: { part: UIMessage["parts"][number] }) {
 }
 
 function ChatPage() {
-  const apiPort = __APP_CONFIG__.services.api.port;
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/agent/messages` }),
+    transport: new DefaultChatTransport({ api: "/api/agent/messages" }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";
@@ -182,7 +182,7 @@ import appConfig from "../../app.config.json";
 export default function ChatScreen() {
   const apiPort = appConfig.services.api.port;
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/agent/messages` }),
+    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/api/agent/messages` }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";

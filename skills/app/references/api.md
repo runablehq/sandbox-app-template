@@ -2,11 +2,12 @@
 
 ## Overview
 
-`packages/api` is a Hono server running on Bun with Drizzle ORM + Turso (SQLite). The port is defined in `app.config.json`.
+`packages/web` runs a single Bun.serve process that serves both the Hono API (under `/api`) and the web frontend (via Bun's HTML imports). The port is defined in `app.config.json`.
 
-Two entry points:
-- `index.ts` — server entry (reads port from `app.config.json`)
-- `src/app.ts` — app definition + `AppType` export (consumed by web/mobile as a package)
+- `index.ts` — server entry. Imports the web HTML and the Hono app, mounts API at `/api/*` with URL rewriting, and serves the web SPA at `/*`.
+- `src/app.ts` — Hono app definition + `AppType` export (consumed by frontend and mobile as a package)
+
+**Routes in `src/app.ts` are defined without the `/api` prefix.** The prefix is applied by `index.ts` at the routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
 
 ## Adding API Routes
 
@@ -57,9 +58,41 @@ const app = new Hono()
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 ```
 
+## Server Entry Point
+
+`index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA:
+
+```ts
+import app from "./src/app";
+import homepage from "./index.html";
+
+Bun.serve({
+  port: 3000,
+  routes: {
+    "/api": (req) => {
+      const url = new URL(req.url);
+      url.pathname = "/";
+      return app.fetch(new Request(url, req));
+    },
+    "/api/*": (req) => {
+      const url = new URL(req.url);
+      url.pathname = url.pathname.replace(/^\/api/, "") || "/";
+      return app.fetch(new Request(url, req));
+    },
+    "/*": homepage,
+  },
+  development: {
+    hmr: true,
+    console: true,
+  },
+});
+```
+
+The URL rewriting strips the `/api` prefix before passing to Hono, so routes in `src/app.ts` are defined without it.
+
 ## Database Schema
 
-Define tables in `packages/api/src/db/schema.ts`:
+Define tables in `packages/web/src/db/schema.ts`:
 
 ```ts
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
@@ -77,7 +110,7 @@ export const users = sqliteTable("users", {
 ## Database Commands
 
 ```bash
-cd packages/api
+cd packages/web
 bun run db:push        # Push schema to database
 bun run db:generate    # Generate migration files
 bun run db:migrate     # Run migrations

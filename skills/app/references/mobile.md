@@ -99,7 +99,19 @@ export default function TabLayout() {
 
 ## Typed API Client
 
-Same pattern as web. The client is in `lib/api.ts` and reads the API port from `app.config.json`.
+Same pattern as web, but with an absolute base URL pointing to the server with the `/api` prefix. The client is in `lib/api.ts`:
+
+```ts
+import { createReactQueryClient } from "@softnetics/hono-react-query";
+import type { AppType } from "@template/web";
+import appConfig from "../../app.config.json";
+
+export const api = createReactQueryClient<AppType>({
+  baseUrl: `http://localhost:${appConfig.services.api.port}/api`,
+});
+```
+
+Usage:
 
 ```tsx
 import { api } from "../lib/api";
@@ -116,8 +128,8 @@ createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
 
 The mobile app needs the API URL to be reachable from the device/simulator:
 
-- **iOS Simulator:** `http://localhost:<port>` works.
-- **Android Emulator:** Use `http://10.0.2.2:<port>` (Android's alias for host localhost).
+- **iOS Simulator:** `http://localhost:<port>/api` works.
+- **Android Emulator:** Use `http://10.0.2.2:<port>/api` (Android's alias for host localhost).
 - **Physical device:** Use your machine's LAN IP.
 
 Update `lib/api.ts` if needed:
@@ -129,8 +141,8 @@ import appConfig from "../../app.config.json";
 const apiPort = appConfig.services.api.port;
 
 const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${apiPort}`,
-  default: `http://localhost:${apiPort}`,
+  android: `http://10.0.2.2:${apiPort}/api`,
+  default: `http://localhost:${apiPort}/api`,
 });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });

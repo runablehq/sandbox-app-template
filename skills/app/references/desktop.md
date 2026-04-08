@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/desktop` is a thin Electron shell. It has **no UI of its own** — it loads the web app from `packages/web` and exposes native capabilities via an IPC bridge.
+`packages/desktop` is a thin Electron shell. It has **no UI of its own** — it loads the web app from the server and exposes native capabilities via an IPC bridge.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ packages/desktop/
   electron-builder.json5 Packaging config
 ```
 
-In **dev**, the main process loads the web dev server (port from `app.config.json`).
+In **dev**, the main process loads the web from the server (port from `app.config.json`).
 In **production**, it loads the built web app copied into `web-dist/`.
 
 ## Adding a Native Feature
@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 });
 ```
 
-### 3. Add type in `packages/web/src/lib/desktop.ts`
+### 3. Add type in `packages/web/web/lib/desktop.ts`
 
 ```ts
 export interface ElectronAPI {
@@ -105,11 +105,11 @@ Configure `electron-builder.json5` for app name, icons, and platform targets (DM
 
 ## Running
 
-Desktop requires the web dev server to be running first:
+Desktop requires the server to be running first:
 
 ```bash
-bun run dev:web &
-bun run dev:desktop
+bun run dev &          # Start the server (API + web)
+bun run dev:desktop    # Start electron
 ```
 
-Or from root: `turbo dev` starts both.
+Or use two terminals — one for the server, one for desktop.
