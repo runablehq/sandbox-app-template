@@ -12,8 +12,8 @@ Monorepo: Bun workspaces + Turborepo.
 - **Server:** Bun.serve — serves both the Hono API (under `/api`) and the web frontend (via HTML imports) from a single process in `packages/web`
 - **API:** Hono, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
 - **Web Frontend:** React + TanStack Router, bundled by Bun's HTML imports — source in `packages/web/src/client/`
-- **Mobile:** Expo + React Native + expo-router
-- **Desktop:** Electron shell (loads the web app from the server, exposes native APIs via IPC)
+- **Mobile:** Expo + React Native + expo-router — Expo dev server port comes from `app.config.json`
+- **Desktop:** Electron shell + Vite (loads the web app from the server, exposes native APIs via IPC) — Vite/Electron ports come from `app.config.json`
 
 Typed end-to-end: `packages/web` exports `AppType`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
 
@@ -39,7 +39,7 @@ Do not start implementation until the user approves or adjusts the plan.
 - **All API routes must be chained** on the same `app` instance in `packages/web/src/api/app.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
 - **Routes in `src/api/app.ts` are defined without `/api` prefix.** The prefix is applied by `src/index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
-- **Desktop has no UI of its own.** It loads the web app. Desktop-specific features are exposed via IPC bridge and used conditionally with `useDesktop()`.
+- **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/client/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
 - **Bun loads `.env` automatically** — no dotenv needed.
 - **Port comes from `app.config.json`** — read it at runtime, never hardcode.
 

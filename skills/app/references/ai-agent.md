@@ -56,10 +56,10 @@ export const agent = new ToolLoopAgent({
 
 ## 3. Add Tools
 
-Create tools under `packages/web/src/agent/`.
+Create tools under `packages/web/src/api/agent/`.
 
 ```ts
-// packages/web/src/agent/calculate-tool.ts
+// packages/web/src/api/agent/calculate-tool.ts
 import z from "zod";
 import { evaluate } from "mathjs";
 import { tool, UIToolInvocation } from "ai";
@@ -176,12 +176,16 @@ import { View, TextInput, FlatList, Text, Pressable, KeyboardAvoidingView, Platf
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
-import appConfig from "../../app.config.json";
+import appConfig from "../../../app.config.json";
 
 export default function ChatScreen() {
   const apiPort = appConfig.services.api.port;
+  const baseUrl = Platform.select({
+    android: `http://10.0.2.2:${apiPort}/api`,
+    default: `http://localhost:${apiPort}/api`,
+  });
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: `http://localhost:${apiPort}/api/agent/messages` }),
+    transport: new DefaultChatTransport({ api: `${baseUrl}/agent/messages` }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";

@@ -19,13 +19,13 @@ cd packages/mobile && bun add better-auth@1.4.22
 
 ## 2. Auth Config
 
-Create `packages/web/src/auth.ts`. Since the API and web are served from the same origin, `trustedOrigins` only needs the server URL. Set `basePath` to `/auth` because the Hono app receives requests with the `/api` prefix already stripped:
+Create `packages/web/src/api/auth.ts`. Set `basePath` to `/auth` because the Hono app receives requests with the `/api` prefix already stripped:
 
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "./db";
-import appConfig from "../../app.config.json";
+import appConfig from "../../../../app.config.json";
+import { db } from "./database";
 
 export const auth = betterAuth({
   basePath: "/auth",
@@ -46,10 +46,10 @@ export const auth = betterAuth({
 
 ```bash
 cd packages/web
-bun x @better-auth/cli@latest generate --config=./src/auth.ts --output=./src/db/auth-schema.ts -y
+bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
 ```
 
-Then import and re-export from `src/db/schema.ts`, and run `bun run db:push`.
+Then import and re-export from `src/api/database/schema.ts`, and run `bun run db:push`.
 
 ## 4. Mount Auth Routes
 
@@ -67,7 +67,7 @@ The auth endpoints are accessible at `/api/auth/**` from the browser.
 
 ## 5. Auth Middleware
 
-Create `packages/web/src/middleware/auth.ts`:
+Create `packages/web/src/api/middleware/auth.ts`:
 
 ```ts
 import { createMiddleware } from "hono/factory";
@@ -124,10 +124,17 @@ Create `packages/mobile/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
-import appConfig from "../../app.config.json";
+import { Platform } from "react-native";
+import appConfig from "../../../app.config.json";
+
+const apiPort = appConfig.services.api.port;
+const baseURL = Platform.select({
+  android: `http://10.0.2.2:${apiPort}/api`,
+  default: `http://localhost:${apiPort}/api`,
+});
 
 export const authClient = createAuthClient({
-  baseURL: `http://localhost:${appConfig.services.api.port}/api`,
+  baseURL,
   basePath: "/auth",
 });
 ```

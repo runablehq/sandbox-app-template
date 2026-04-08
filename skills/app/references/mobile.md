@@ -104,11 +104,16 @@ Same pattern as web, but with an absolute base URL pointing to the server with t
 ```ts
 import { createReactQueryClient } from "@softnetics/hono-react-query";
 import type { AppType } from "@template/web";
-import appConfig from "../../app.config.json";
+import { Platform } from "react-native";
+import appConfig from "../../../app.config.json";
 
-export const api = createReactQueryClient<AppType>({
-  baseUrl: `http://localhost:${appConfig.services.api.port}/api`,
+const apiPort = appConfig.services.api.port;
+const baseUrl = Platform.select({
+  android: `http://10.0.2.2:${apiPort}/api`,
+  default: `http://localhost:${apiPort}/api`,
 });
+
+export const api = createReactQueryClient<AppType>({ baseUrl });
 ```
 
 Usage:
@@ -136,10 +141,9 @@ Update `lib/api.ts` if needed:
 
 ```ts
 import { Platform } from "react-native";
-import appConfig from "../../app.config.json";
+import appConfig from "../../../app.config.json";
 
 const apiPort = appConfig.services.api.port;
-
 const baseUrl = Platform.select({
   android: `http://10.0.2.2:${apiPort}/api`,
   default: `http://localhost:${apiPort}/api`,
@@ -152,7 +156,7 @@ export const api = createReactQueryClient<AppType>({ baseUrl });
 
 ```bash
 cd packages/mobile
-bun start              # Expo dev server
-bun run ios            # iOS simulator
-bun run android        # Android emulator
+bun run dev            # Expo dev server, port from app.config.json
+bun run ios            # iOS simulator, port from app.config.json
+bun run android        # Android emulator, port from app.config.json
 ```

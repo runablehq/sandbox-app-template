@@ -1,15 +1,18 @@
 # web
 
-Unified server — serves both the Hono API (under `/api`) and the React frontend from a single Bun.serve process.
+Unified server — serves both the Hono API under `/api` and the React frontend from a single Bun.serve process.
 
-To install dependencies:
+## Run
 
 ```bash
-bun install
+bun run dev
 ```
 
-To run:
+The server port is read from the root `app.config.json`.
+
+## Typecheck and build
 
 ```bash
-bun --hot index.ts
+bun run typecheck
+bun run build
 ```

@@ -4,6 +4,11 @@ import electron from "vite-plugin-electron/simple";
 import appConfig from "../../app.config.json";
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      input: path.join(__dirname, "electron/no-renderer.ts"),
+    },
+  },
   plugins: [
     electron({
       main: {

@@ -6,8 +6,9 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && electron-builder",
-    "preview": "vite preview"
+    "build": "vite build",
+    "dist": "vite build && electron-builder",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "electron": "^30.0.1",

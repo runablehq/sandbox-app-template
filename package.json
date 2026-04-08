@@ -10,6 +10,7 @@
     "dev:desktop": "turbo dev --filter=@template/desktop",
     "dev:mobile": "turbo dev --filter=@template/mobile",
     "build": "turbo build",
+    "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
     "db:push": "turbo db:push",

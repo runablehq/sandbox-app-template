@@ -106,7 +106,7 @@ export default function RootLayout() {
 
 ## 5. Better Auth Plugin
 
-Add Autumn plugin in `packages/web/src/auth.ts`:
+Add Autumn plugin in `packages/web/src/api/auth.ts`:
 
 ```ts
 import { autumn } from "autumn-js/better-auth";

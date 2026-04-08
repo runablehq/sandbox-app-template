@@ -2,7 +2,9 @@
 
 ## Overview
 
-`packages/desktop` is a thin Electron shell. It has **no UI of its own** — it loads the web app from the server and exposes native capabilities via an IPC bridge.
+`packages/desktop` is a thin Electron shell. It has **no separate renderer by default** — it loads the web app from the server and exposes native capabilities via an IPC bridge.
+
+Desktop-specific UI should usually still live in `packages/web/src/client/` and be gated with `useDesktop()` / `window.electronAPI`. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture (for example, a launcher, splash screen, offline-only shell, or a completely different desktop product).
 
 ## Architecture
 
@@ -12,12 +14,47 @@ packages/desktop/
     main.ts              Electron main process (window, IPC handlers)
     preload.ts           contextBridge: exposes typed API to renderer as window.electronAPI
     electron-env.d.ts    Environment type declarations
-  vite.config.ts         Builds main + preload only (no renderer), port from app.config.json
+    no-renderer.ts       Empty Vite input; desktop has no renderer UI of its own
+  vite.config.ts         Vite builds main + preload, reads port from app.config.json
   electron-builder.json5 Packaging config
 ```
 
 In **dev**, the main process loads the web from the server (port from `app.config.json`).
 In **production**, it loads the built web app copied into `web-dist/`.
+
+## Adding Desktop-Specific UI
+
+Keep desktop-only UI in the web client unless the user explicitly requests a separate desktop renderer.
+
+```tsx
+import { useDesktop } from "../hooks/use-desktop";
+
+function DesktopToolbar() {
+  const desktop = useDesktop();
+  if (!desktop) return null;
+
+  return (
+    <div>
+      <button onClick={() => desktop.minimize()}>Minimize</button>
+      <button onClick={() => desktop.maximize()}>Maximize</button>
+      <button onClick={() => desktop.close()}>Close</button>
+    </div>
+  );
+}
+```
+
+For desktop-only pages, render a fallback when not running in Electron:
+
+```tsx
+function DesktopSettingsPage() {
+  const desktop = useDesktop();
+  if (!desktop) return <p>This page is only available in the desktop app.</p>;
+
+  return <DesktopSettings />;
+}
+```
+
+Use this pattern for custom titlebars, desktop-only sidebars/actions, file open/save UI, notification controls, keyboard shortcut hints, and UI for native integrations exposed via IPC.
 
 ## Adding a Native Feature
 
@@ -98,7 +135,8 @@ Already wired in the template:
 
 ```bash
 cd packages/desktop
-bun run build       # Builds electron + packages with electron-builder
+bun run build       # Vite builds Electron main + preload
+bun run dist        # Vite build, then package with electron-builder
 ```
 
 Configure `electron-builder.json5` for app name, icons, and platform targets (DMG, NSIS, AppImage).

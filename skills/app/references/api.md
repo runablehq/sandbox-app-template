@@ -63,21 +63,24 @@ const app = new Hono()
 `src/index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA:
 
 ```ts
+import appConfig from "../../../app.config.json";
 import app from "./api/app";
 import homepage from "./client/index.html";
 
+const port = appConfig.services.api.port;
+
 Bun.serve({
-  port: 3000,
+  port,
   routes: {
     "/api": (req) => {
       const url = new URL(req.url);
       url.pathname = "/";
-      return app.fetch(new Request(url, req));
+      return app.fetch(new Request(url.toString(), req));
     },
     "/api/*": (req) => {
       const url = new URL(req.url);
       url.pathname = url.pathname.replace(/^\/api/, "") || "/";
-      return app.fetch(new Request(url, req));
+      return app.fetch(new Request(url.toString(), req));
     },
     "/*": homepage,
   },

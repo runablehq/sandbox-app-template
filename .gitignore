@@ -1,4 +1,4 @@
-# dependencies (bun install)
+# dependencies
 node_modules
 
 # output
@@ -6,6 +6,7 @@ out
 dist
 dist-electron
 release
+web-build
 *.tgz
 
 # code coverage
@@ -23,8 +24,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.test.local
 .env.production.local
 .env.local
+.env*.local
 
 # caches
+.eslintcache
 .cache
 *.tsbuildinfo
 .turbo
@@ -32,8 +35,34 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # IntelliJ based IDEs
 .idea
 
-# Finder (MacOS) folder config
+# macOS
 .DS_Store
+
+# Expo
+.expo/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# generated native folders
+ios
+android
 
 # scripts (local-only provisioning)
 scripts/

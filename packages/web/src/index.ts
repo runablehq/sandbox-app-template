@@ -1,21 +1,23 @@
 import { join } from "node:path";
+import appConfig from "../../../app.config.json";
 import app from "./api/app";
 import homepage from "./client/index.html";
 
 const publicDir = join(import.meta.dir, "..", "public");
+const port = appConfig.services.api.port;
 
 Bun.serve({
-  port: 3000,
+  port,
   routes: {
     "/api": (req) => {
       const url = new URL(req.url);
       url.pathname = "/";
-      return app.fetch(new Request(url, req));
+      return app.fetch(new Request(url.toString(), req));
     },
     "/api/*": (req) => {
       const url = new URL(req.url);
       url.pathname = url.pathname.replace(/^\/api/, "") || "/";
-      return app.fetch(new Request(url, req));
+      return app.fetch(new Request(url.toString(), req));
     },
     "/*": homepage,
   },
@@ -35,4 +37,4 @@ Bun.serve({
 
 export type { AppType } from "./api/app";
 
-console.log("Server running on http://localhost:3000");
+console.log(`Server running on http://localhost:${port}`);
