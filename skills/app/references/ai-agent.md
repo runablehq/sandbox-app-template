@@ -1,6 +1,6 @@
 # AI Agent
 
-We use [AI SDK](https://v6.ai-sdk.dev) with OpenAI-compatible endpoints for AI agents.
+We use [AI SDK](https://v6.ai-sdk.dev) with the Vercel AI Gateway provider for AI agents.
 
 <preflight>
 Before wiring, state your assumptions about the agent's persona, which model to use, what tools it needs, and where the chat UI lives (web, mobile, or both). The user will correct what's wrong.
@@ -22,7 +22,7 @@ Before wiring, state your assumptions about the agent's persona, which model to 
 ## 1. Install
 
 ```bash
-cd packages/web && bun add ai @ai-sdk/openai dedent @ai-sdk/react
+cd packages/web && bun add ai dedent @ai-sdk/react
 cd packages/mobile && bun add @ai-sdk/react ai
 ```
 
@@ -31,11 +31,10 @@ cd packages/mobile && bun add @ai-sdk/react ai
 Create `packages/web/src/api/agent/index.ts`:
 
 ```ts
-import { stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
+import { createGateway, stepCountIs, SystemModelMessage, ToolLoopAgent } from "ai";
 import dedent from "dedent";
-import { createOpenAI } from "@ai-sdk/openai";
 
-const openai = createOpenAI({
+const gateway = createGateway({
   baseURL: process.env.AI_GATEWAY_BASE_URL,
   apiKey: process.env.AI_GATEWAY_API_KEY,
 });
@@ -48,7 +47,7 @@ const INSTRUCTIONS: SystemModelMessage[] = [
 ];
 
 export const agent = new ToolLoopAgent({
-  model: openai.chat("anthropic/claude-sonnet-4.6"),
+  model: gateway("anthropic/claude-sonnet-4.6"),
   instructions: INSTRUCTIONS,
   tools: {},
   stopWhen: [stepCountIs(100)],
