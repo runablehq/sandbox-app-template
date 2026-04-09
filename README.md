@@ -40,7 +40,7 @@ packages/
 
 All service configuration lives in `app.config.json` at the project root. Read this file to get ports and dev commands for each service. The template code reads ports from this file; do not hardcode ports in application code, agent examples, or platform clients.
 
-The server serves both the API at `/api/*` and the web frontend at `/*` from a single API/web port.
+The web service serves both the API at `/api/*` and the web frontend at `/*` from a single web port.
 
 ## Desktop UI
 
@@ -53,7 +53,7 @@ Secrets and credentials live in `.env` at the project root (gitignored). Bun loa
 ## Dev Commands
 
 ```sh
-bun run dev            # start the server (API + web)
+bun run dev            # start the web service (API + frontend)
 bun run dev:desktop    # start the desktop app (requires server running)
 bun run dev:mobile     # start the Expo app
 ```

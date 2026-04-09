@@ -4,7 +4,7 @@ import app from "./api/app";
 import homepage from "./client/index.html";
 
 const publicDir = join(import.meta.dir, "..", "public");
-const port = appConfig.services.api.port;
+const port = appConfig.services.web.port;
 
 Bun.serve({
   port,
@@ -25,9 +25,9 @@ Bun.serve({
     const url = new URL(req.url);
     const filePath = join(publicDir, url.pathname);
     const file = Bun.file(filePath);
-    return file.exists().then((exists) =>
-      exists ? new Response(file) : new Response("Not Found", { status: 404 }),
-    );
+    return file
+      .exists()
+      .then((exists) => (exists ? new Response(file) : new Response("Not Found", { status: 404 })));
   },
   development: {
     hmr: true,

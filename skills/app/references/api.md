@@ -67,7 +67,7 @@ import appConfig from "../../../app.config.json";
 import app from "./api/app";
 import homepage from "./client/index.html";
 
-const port = appConfig.services.api.port;
+const port = appConfig.services.web.port;
 
 Bun.serve({
   port,

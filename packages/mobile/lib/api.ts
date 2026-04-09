@@ -4,10 +4,10 @@ import type { AppType } from "@template/web";
 
 import appConfig from "../../../app.config.json";
 
-const apiPort = appConfig.services.api.port;
+const webPort = appConfig.services.web.port;
 const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${apiPort}/api`,
-  default: `http://localhost:${apiPort}/api`,
+  android: `http://10.0.2.2:${webPort}/api`,
+  default: `http://localhost:${webPort}/api`,
 });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });
