@@ -7,7 +7,7 @@ import appConfig from "../../../app.config.json";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const isDev = process.env.NODE_ENV !== "production";
-const WEB_DEV_URL = `http://localhost:${appConfig.services.web.port}`;
+const WEB_DEV_URL = `http://localhost:${appConfig.services.website.port}`;
 const WEB_DIST = path.join(__dirname, "../web-dist");
 
 let win: BrowserWindow | null;

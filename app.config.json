@@ -1,10 +1,10 @@
 {
   "name": "sandbox-app-template",
-  "description": "Full-stack app template with web, desktop, mobile, and API",
+  "description": "Full-stack app template with website, desktop, mobile, and API",
   "services": {
-    "web": {
-      "name": "Web App",
-      "type": "web",
+    "website": {
+      "name": "Website",
+      "type": "website",
       "port": 3000,
       "dev": "bun run dev"
     },

@@ -107,10 +107,10 @@ import type { AppType } from "@template/web";
 import { Platform } from "react-native";
 import appConfig from "../../../app.config.json";
 
-const webPort = appConfig.services.web.port;
+const websitePort = appConfig.services.website.port;
 const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${webPort}/api`,
-  default: `http://localhost:${webPort}/api`,
+  android: `http://10.0.2.2:${websitePort}/api`,
+  default: `http://localhost:${websitePort}/api`,
 });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });
@@ -143,10 +143,10 @@ Update `lib/api.ts` if needed:
 import { Platform } from "react-native";
 import appConfig from "../../../app.config.json";
 
-const webPort = appConfig.services.web.port;
+const websitePort = appConfig.services.website.port;
 const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${webPort}/api`,
-  default: `http://localhost:${webPort}/api`,
+  android: `http://10.0.2.2:${websitePort}/api`,
+  default: `http://localhost:${websitePort}/api`,
 });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });

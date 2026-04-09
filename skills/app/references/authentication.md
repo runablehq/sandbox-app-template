@@ -37,7 +37,7 @@ export const auth = betterAuth({
   },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [
-    `http://localhost:${appConfig.services.web.port}`,
+    `http://localhost:${appConfig.services.website.port}`,
   ],
 });
 ```
@@ -127,10 +127,10 @@ import { createAuthClient } from "better-auth/react";
 import { Platform } from "react-native";
 import appConfig from "../../../app.config.json";
 
-const webPort = appConfig.services.web.port;
+const websitePort = appConfig.services.website.port;
 const baseURL = Platform.select({
-  android: `http://10.0.2.2:${webPort}/api`,
-  default: `http://localhost:${webPort}/api`,
+  android: `http://10.0.2.2:${websitePort}/api`,
+  default: `http://localhost:${websitePort}/api`,
 });
 
 export const authClient = createAuthClient({

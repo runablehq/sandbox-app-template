@@ -179,10 +179,10 @@ import { useState } from "react";
 import appConfig from "../../../app.config.json";
 
 export default function ChatScreen() {
-  const webPort = appConfig.services.web.port;
+  const websitePort = appConfig.services.website.port;
   const baseUrl = Platform.select({
-    android: `http://10.0.2.2:${webPort}/api`,
-    default: `http://localhost:${webPort}/api`,
+    android: `http://10.0.2.2:${websitePort}/api`,
+    default: `http://localhost:${websitePort}/api`,
   });
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: `${baseUrl}/agent/messages` }),

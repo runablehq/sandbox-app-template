@@ -4,7 +4,7 @@ import app from "./api/app";
 import homepage from "./client/index.html";
 
 const publicDir = join(import.meta.dir, "..", "public");
-const port = appConfig.services.web.port;
+const port = appConfig.services.website.port;
 
 Bun.serve({
   port,
