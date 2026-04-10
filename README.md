@@ -55,7 +55,7 @@ Secrets and credentials live in `.env` at the project root (gitignored). Bun loa
 ```sh
 bun run dev            # start the web service (API + frontend)
 bun run dev:desktop    # start the desktop app (requires server running)
-bun run dev:mobile     # start the Expo app
+bun run dev:mobile -- --web   # preview mobile in browser
 ```
 
 ## Quality Commands

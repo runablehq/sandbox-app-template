@@ -52,8 +52,8 @@ Read `app.config.json` for the server port, then:
 bun run dev
 
 # Individual platforms
-bun run dev:mobile
-bun run dev:desktop    # requires server running first
+bun run dev:mobile -- --web    # preview mobile in browser
+bun run dev:desktop            # requires server running first
 ```
 
 ### Database
