@@ -89,13 +89,13 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 ## 6. Web Auth Client
 
-Create `packages/web/src/client/lib/auth.ts`. Since web and API are same origin, use a relative base URL:
+Create `packages/web/src/client/lib/auth.ts`. BetterAuth requires a full URL — use `window.location.origin` so it works in both dev and production:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
 
 export const authClient = createAuthClient({
-  baseURL: "/api",
+  baseURL: window.location.origin + "/api",
   basePath: "/auth",
 });
 ```

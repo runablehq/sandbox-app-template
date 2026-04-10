@@ -52,8 +52,8 @@ Read `app.config.json` for the server port, then:
 bun run dev
 
 # Individual platforms
-bun run dev:mobile -- --web    # preview mobile in browser
-bun run dev:desktop            # requires server running first
+bun run dev:mobile
+bun run dev:desktop    # requires server running first
 ```
 
 ### Database
@@ -86,4 +86,4 @@ For platform-specific patterns, consult the matching reference:
 
 ## Testing
 
-Before delivering, verify the app works. Start the dev server, test key flows, confirm no console errors or broken layouts. Don't deliver a broken app.
+Before delivering, run `bun run build` to verify the app compiles without errors. Then start `bun run dev` and `bun run dev:mobile` and check that both are reachable on their ports from `app.config.json`. Fix any failures before delivering.
