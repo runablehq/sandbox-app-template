@@ -26,8 +26,8 @@
     "@tanstack/react-router": "^1.120.3",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

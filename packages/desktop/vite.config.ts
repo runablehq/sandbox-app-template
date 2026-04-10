@@ -21,5 +21,6 @@ export default defineConfig({
   ],
   server: {
     port: appConfig.services.desktop.port,
+    allowedHosts: true,
   },
 });
