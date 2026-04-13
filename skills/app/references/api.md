@@ -90,14 +90,13 @@ Bun.serve({
       }));
     }
 
-    // Static files, then SPA fallback
+    // Static files from public/, then SPA fallback
     const filePath = join(publicDir, url.pathname);
     const file = Bun.file(filePath);
     return file.exists().then((exists) => {
       if (exists) return new Response(file);
-      return new Response(Bun.file(join(import.meta.dir, "client", "index.html")), {
-        headers: { "Content-Type": "text/html" },
-      });
+      // SPA fallback — return the Bun HTML import (bundled, with HMR)
+      return homepage as unknown as Response;
     });
   },
   development: {

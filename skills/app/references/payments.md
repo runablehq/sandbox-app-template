@@ -118,7 +118,7 @@ export default function RootLayout() {
 
 ## 6. Frontend Usage
 
-`useListPlans` returns `{ list: Plan[] }`. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]`, and `customerEligibility` (`{ attachAction, status }`).
+`useListPlans` returns `Plan[]` directly. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]`, and `customerEligibility` (`{ attachAction, status }`).
 
 `useCustomer` returns `Customer` with `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`).
 
@@ -138,7 +138,7 @@ function PricingPage() {
     <div>
       <p>Plan: {activePlan}</p>
       <p>Messages: {balance?.remaining} / {balance?.granted}</p>
-      {plans?.list?.map((plan) => (
+      {(plans ?? []).map((plan) => (
         <button
           key={plan.id}
           disabled={plan.id === activePlan}
