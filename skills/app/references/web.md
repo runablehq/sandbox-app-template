@@ -2,7 +2,7 @@
 
 ## Overview
 
-The web frontend lives in `packages/web/src/client/` and is served by the same Bun.serve process as the API. Bun's HTML imports handle bundling, HMR, and serving — no separate dev server needed. Uses React, TanStack Router (file-based routing), and typed API calls via `@softnetics/hono-react-query`.
+The web frontend lives in `packages/web/src/client/` and is served by the same Bun.serve process as the API. Bun's HTML imports handle bundling, HMR, and serving — no separate dev server needed. Uses React, TanStack Router, and typed API calls via `@softnetics/hono-react-query`.
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
@@ -19,14 +19,10 @@ packages/web/
     client/                      Frontend source
       index.html                 Frontend HTML entry (imported by src/index.ts)
       main.tsx                   App entry (QueryClientProvider + RouterProvider)
-      routeTree.gen.ts           Generated route tree
+      routeTree.gen.ts           Route tree (manual — add new routes here)
       routes/
         __root.tsx               Root layout (wraps all pages)
         index.tsx                / page
-        about.tsx                /about page
-        users/
-          index.tsx              /users page
-          $id.tsx                /users/:id page
       hooks/
         use-desktop.ts           Desktop detection hook
       lib/
@@ -36,19 +32,16 @@ packages/web/
 
 ## Adding Pages
 
-Create files in `src/client/routes/`. TanStack Router uses file-based routing.
-
-After adding a new route file, regenerate the route tree:
-
-```bash
-cd packages/web && bunx @tanstack/router-cli generate
-```
+1. Create a route file in `src/client/routes/` using `createRoute`:
 
 ```tsx
 // src/client/routes/about.tsx
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as rootRoute } from "./__root";
 
-export const Route = createFileRoute("/about")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/about",
   component: AboutPage,
 });
 
@@ -57,14 +50,30 @@ function AboutPage() {
 }
 ```
 
+2. Add it to `routeTree.gen.ts`:
+
+```ts
+import { Route as rootRoute } from "./routes/__root"
+import { Route as IndexRoute } from "./routes/index"
+import { Route as AboutRoute } from "./routes/about"
+
+export const routeTree = rootRoute.addChildren([
+  IndexRoute,
+  AboutRoute,
+])
+```
+
 ### Dynamic routes
 
 ```tsx
 // src/client/routes/users/$id.tsx
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as rootRoute } from "../__root";
 import { api } from "../../lib/api";
 
-export const Route = createFileRoute("/users/$id")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/users/$id",
   component: UserPage,
 });
 

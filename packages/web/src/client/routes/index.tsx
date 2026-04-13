@@ -1,8 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as rootRoute } from "./__root";
 import { api } from "../lib/api";
 import { useDesktop } from "../hooks/use-desktop";
 
-export const Route = createFileRoute("/")({
+export const Route = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
   component: Index,
 });
 

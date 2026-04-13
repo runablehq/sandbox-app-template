@@ -42,6 +42,7 @@ Do not start implementation until the user approves or adjusts the plan.
 - **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/client/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
 - **Bun loads `.env` automatically** — no dotenv needed.
 - **Port comes from `app.config.json`** — read it at runtime, never hardcode.
+- **For any payment, subscription, or billing feature** — always consult [references/payments.md](references/payments.md) first. Use Autumn hooks (`useCustomer`, `useListPlans`) for plan display and checkout, never build custom payment logic.
 
 ### Preview
 
@@ -71,7 +72,7 @@ bun run db:studio      # Open Drizzle Studio
 For optional capabilities, consult the matching reference before implementation:
 
 - Authentication: [references/authentication.md](references/authentication.md)
-- Payments: [references/payments.md](references/payments.md)
+- Payments, plans, subscriptions, billing, pricing, usage tracking: [references/payments.md](references/payments.md)
 - AI agent: [references/ai-agent.md](references/ai-agent.md)
 - Email: [references/email.md](references/email.md)
 
