@@ -19,7 +19,7 @@ cd packages/mobile && bun add better-auth@1.4.22
 
 ## 2. Auth Config
 
-Create `packages/web/src/api/auth.ts`. Set `basePath` to `/auth` because the Hono app receives requests with the `/api` prefix already stripped:
+Create `packages/web/src/api/auth.ts`.
 
 ```ts
 import { betterAuth } from "better-auth";
@@ -27,20 +27,33 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import appConfig from "../../../../app.config.json";
 import { db } from "./database";
 
-export const auth = betterAuth({
-  basePath: "/auth",
-  database: drizzleAdapter(db, {
-    provider: "sqlite",
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-  secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [
-    `http://localhost:${appConfig.services.website.port}`,
-  ],
-});
+export const createAuth = (baseURL: string) =>
+  betterAuth({
+    basePath: "/auth",
+    baseURL,
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+    }),
+    emailAndPassword: {
+      enabled: true,
+    },
+    secret: process.env.BETTER_AUTH_SECRET,
+    trustedOrigins: async (request) => {
+      const origin = request?.headers.get("origin");
+      if (origin) return [origin];
+      return [`http://localhost:${appConfig.services.website.port}`];
+    },
+  });
+
+// Static export for CLI schema generation only (uses the local dev server port).
+export const auth = createAuth(`http://localhost:${appConfig.services.website.port}/api`);
 ```
+
+**Key points:**
+- `basePath: "/auth"` — routes are `/auth/**` inside Hono (accessible at `/api/auth/**` from the browser).
+- `baseURL` — must include `/api` because that's where the auth endpoints live from the client's perspective. The factory builds this from the request origin + `/api`.
+- `trustedOrigins` — dynamic function so it works for every client (web, mobile, desktop, production) without hardcoding each one.
+- The static `auth` export exists only so `@better-auth/cli` can read the config for schema generation.
 
 ## 3. Generate Auth Schema
 
@@ -53,15 +66,23 @@ Then import and re-export from `src/api/database/schema.ts`, and run `bun run db
 
 ## 4. Mount Auth Routes
 
-In `packages/web/src/api/app.ts`. Note: routes are defined without `/api` prefix (it's stripped by `src/index.ts`):
+In `packages/web/src/api/app.ts`. The handler must derive `baseURL` from the **original** request origin, not the rewritten URL:
 
 ```ts
-import { auth } from "./auth";
+import { Hono } from "hono";
+import { createAuth } from "./auth";
 
 const app = new Hono()
-  .on(["POST", "GET"], "/auth/**", (c) => auth.handler(c.req.raw))
+  .on(["POST", "GET"], "/auth/**", (c) => {
+    const origin = new URL(c.req.raw.url);
+    const baseURL = `${origin.protocol}//${origin.host}/api`;
+    const auth = createAuth(baseURL);
+    return auth.handler(c.req.raw);
+  })
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 ```
+
+> **Note:** The Hono handler receives the rewritten URL (without `/api`), but `origin.protocol` and `origin.host` are still correct. We append `/api` to reconstruct the real base URL that clients use.
 
 The auth endpoints are accessible at `/api/auth/**` from the browser.
 
@@ -71,15 +92,23 @@ Create `packages/web/src/api/middleware/auth.ts`:
 
 ```ts
 import { createMiddleware } from "hono/factory";
-import { auth } from "../auth";
+import { createAuth } from "../auth";
 
+const getBaseURL = (request: Request) => {
+  const url = new URL(request.url);
+  return `${url.protocol}//${url.host}/api`;
+};
+
+// Attaches session and user to Hono context if authenticated.
 export const authMiddleware = createMiddleware(async (c, next) => {
+  const auth = createAuth(getBaseURL(c.req.raw));
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   c.set("user", session?.user ?? null);
   c.set("session", session?.session ?? null);
   return next();
 });
 
+// Use on routes that require authentication.
 export const requireAuth = createMiddleware(async (c, next) => {
   const user = c.get("user");
   if (!user) return c.json({ message: "Unauthorized" }, 401);
@@ -89,7 +118,7 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 ## 6. Web Auth Client
 
-Create `packages/web/src/client/lib/auth.ts`. BetterAuth requires a full URL — use `window.location.origin` so it works in both dev and production:
+Create `packages/web/src/client/lib/auth.ts`. Uses `window.location.origin` so it works in dev, production, and desktop (Electron loads from the same origin):
 
 ```ts
 import { createAuthClient } from "better-auth/react";
@@ -141,18 +170,32 @@ export const authClient = createAuthClient({
 
 Same API as web — `authClient.signIn.email()`, `authClient.useSession()`, etc.
 
-## 8. Protected Routes
+## 8. Authentication Pages
+
+Add sign-in and sign-up pages in `packages/web/src/client/routes/`.
+
+Use the Better Auth client methods:
+- Sign in: `authClient.signIn.email({ email, password })`
+- Sign up: `authClient.signUp.email({ name, email, password })`
+
+Design requirement:
+- Do not ship barebones forms.
+- Match the existing visual language of the app.
+- Error states matter — show clear, specific messages (not "something went wrong").
+- Loading and redirect transitions should feel instant, not jarring.
+
+## 9. Protected Routes
 
 ### Web (TanStack Router)
 
 ```tsx
-// web/routes/__root.tsx
+// packages/web/src/client/routes/__root.tsx
 import { authClient } from "../lib/auth";
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     const { data: session } = await authClient.getSession();
-    if (!session && location.pathname !== "/sign-in") {
+    if (!session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up") {
       throw redirect({ to: "/sign-in" });
     }
   },
@@ -163,7 +206,7 @@ export const Route = createRootRoute({
 ### Mobile (Expo Router)
 
 ```tsx
-// app/_layout.tsx
+// packages/mobile/app/_layout.tsx
 import { useRouter, useSegments } from "expo-router";
 import { authClient } from "../lib/auth";
 import { useEffect } from "react";
