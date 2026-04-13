@@ -17,13 +17,11 @@ cd packages/web && bun add autumn-js@1.2.0
 cd packages/mobile && bun add autumn-js@1.2.0
 ```
 
-Install CLI globally: `bun add -g atmn@1.1.8`
+Install CLI: `bun add -D atmn@1.1.8` (project root)
 
 ## 2. Autumn Config
 
-Create `autumn.config.ts` in project root:
-
-> `reset` and `price` are mutually exclusive on `item()`. Consumable metered features **must have one of them**. `included` must be >= 0. For unlimited, use `unlimited: true`.
+Create `autumn.config.ts` in project root. `reset` and `price` are mutually exclusive on `item()`.
 
 ```ts
 import { feature, plan, item } from "atmn";
@@ -67,16 +65,29 @@ export default {
 };
 ```
 
-Push to Autumn: `atmn push -y`
+Push to Autumn: `npx atmn push -y`
 
-## 3. Provider Setup (Web)
+## 3. Better Auth Plugin
 
-In `packages/web/src/client/main.tsx`, wrap with `AutumnProvider`:
+Add `autumn()` plugin in `packages/web/src/api/auth.ts`. This registers all Autumn endpoints under `/api/auth/autumn/*` as POST routes. No separate Hono handler needed.
+
+```ts
+import { autumn } from "autumn-js/better-auth";
+
+export const createAuth = (baseURL: string) =>
+  betterAuth({
+    // ...existing config
+    plugins: [autumn()],
+  });
+```
+
+## 4. Provider Setup (Web)
+
+In `packages/web/src/client/main.tsx`:
 
 ```tsx
 import { AutumnProvider } from "autumn-js/react";
 
-// Inside render:
 <QueryClientProvider client={queryClient}>
   <AutumnProvider useBetterAuth>
     <RouterProvider router={router} />
@@ -84,12 +95,13 @@ import { AutumnProvider } from "autumn-js/react";
 </QueryClientProvider>
 ```
 
-## 4. Provider Setup (Mobile)
+## 5. Provider Setup (Mobile)
 
 In `packages/mobile/app/_layout.tsx`:
 
 ```tsx
 import { AutumnProvider } from "autumn-js/react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   return (
@@ -104,22 +116,13 @@ export default function RootLayout() {
 }
 ```
 
-## 5. Better Auth Plugin
-
-Add Autumn plugin in `packages/web/src/api/auth.ts`:
-
-```ts
-import { autumn } from "autumn-js/better-auth";
-
-export const auth = betterAuth({
-  // ...existing config
-  plugins: [autumn()],
-});
-```
-
 ## 6. Frontend Usage
 
-Same API on web and mobile:
+`useListPlans` returns `{ list: Plan[] }`. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]`, and `customerEligibility` (`{ attachAction, status }`).
+
+`useCustomer` returns `Customer` with `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`).
+
+`attach` takes `{ planId, successUrl? }` — returns a Stripe checkout URL for paid plans, applies immediately for free.
 
 ```tsx
 import { useCustomer, useListPlans } from "autumn-js/react";
@@ -130,36 +133,42 @@ function PricingPage() {
 
   const activePlan = customer?.subscriptions?.[0]?.planId ?? "free";
   const balance = customer?.balances?.["messages"];
-  // balance.remaining, balance.granted, balance.usage, balance.unlimited
 
   return (
-    <button onClick={() => attach({ planId: "pro", successUrl: window.location.origin })}>
-      Upgrade to Pro
-    </button>
+    <div>
+      <p>Plan: {activePlan}</p>
+      <p>Messages: {balance?.remaining} / {balance?.granted}</p>
+      {plans?.list?.map((plan) => (
+        <button
+          key={plan.id}
+          disabled={plan.id === activePlan}
+          onClick={() => attach({ planId: plan.id, successUrl: window.location.origin })}
+        >
+          {plan.name} — {plan.price ? `$${plan.price.amount / 100}/mo` : "Free"}
+        </button>
+      ))}
+    </div>
   );
 }
 ```
 
 ## 7. Backend Check & Track
 
-SDK reads `AUTUMN_SECRET_KEY` from env automatically:
+SDK reads `AUTUMN_SECRET_KEY` from env automatically.
 
 ```ts
 import { Autumn } from "autumn-js";
 
 const autumn = new Autumn();
 
-// Check — verify balance before allowing access
-const result = await autumn.check({
+// Check — returns { allowed, balance }
+const { allowed } = await autumn.check({
   customerId: userId,
   featureId: "messages",
-  requiredBalance: 1,
 });
-if (!result.allowed) {
-  return c.json({ error: "Insufficient balance" }, 403);
-}
+if (!allowed) return c.json({ error: "Insufficient balance" }, 403);
 
-// Track — record usage after action succeeds
+// Track — returns { balance } with updated remaining
 await autumn.track({
   customerId: userId,
   featureId: "messages",
@@ -167,24 +176,24 @@ await autumn.track({
 });
 ```
 
-## 8. Backend Handler (non-Better-Auth)
+## 8. Handler (non-Better-Auth)
 
-If not using Better Auth, mount `autumnHandler`. Note: routes are defined without `/api` prefix (it's applied by `src/index.ts`):
+Only needed if **not** using the Better Auth plugin. The Hono handler's `identify` receives the Hono `Context`, not a raw Request. Mount in `src/index.ts` before the `/api` strip, same pattern as auth:
 
 ```ts
 import { autumnHandler } from "autumn-js/hono";
 
-// In app.ts chain:
-.all("/autumn/*", autumnHandler({
-  identify: async (c) => {
-    const user = getUser(c);
-    return { customerId: user.id };
+// In a Hono sub-app or directly:
+app.all("/autumn/*", autumnHandler({
+  identify: (c) => {
+    const user = c.get("user");
+    return { customerId: user?.id };
   },
-}))
+}));
 ```
 
-The endpoint is accessible at `/api/autumn/*`.
+When using this handler without Better Auth, set `AutumnProvider` without `useBetterAuth` and pass `backendUrl` + `pathPrefix` manually.
 
 ## CLI Commands
 
-`atmn init` | `atmn login` | `atmn push` (`-p` for prod, `-y` to confirm) | `atmn pull` | `atmn nuke` | `atmn env` | `atmn dashboard`
+`npx atmn push -y` | `npx atmn push -p` (prod) | `npx atmn pull` | `npx atmn nuke` | `npx atmn env` | `npx atmn dashboard`
