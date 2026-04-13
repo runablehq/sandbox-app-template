@@ -9,25 +9,32 @@ const port = appConfig.services.website.port;
 Bun.serve({
   port,
   routes: {
-    "/api": (req) => {
-      const url = new URL(req.url);
-      url.pathname = "/";
-      return app.fetch(new Request(url.toString(), req));
-    },
-    "/api/*": (req) => {
-      const url = new URL(req.url);
-      url.pathname = url.pathname.replace(/^\/api/, "") || "/";
-      return app.fetch(new Request(url.toString(), req));
-    },
-    "/*": homepage,
+    "/": homepage,
   },
   fetch(req) {
     const url = new URL(req.url);
+
+    // Route /api/* to Hono (strips the /api prefix)
+    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+      const apiUrl = new URL(url);
+      apiUrl.pathname = url.pathname.replace(/^\/api/, "") || "/";
+      return app.fetch(new Request(apiUrl.toString(), {
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+      }));
+    }
+
+    // Serve static files from public/, fallback to SPA
     const filePath = join(publicDir, url.pathname);
     const file = Bun.file(filePath);
-    return file
-      .exists()
-      .then((exists) => (exists ? new Response(file) : new Response("Not Found", { status: 404 })));
+    return file.exists().then((exists) => {
+      if (exists) return new Response(file);
+      // SPA fallback — serve homepage for client-side routes
+      return new Response(Bun.file(join(import.meta.dir, "client", "index.html")), {
+        headers: { "Content-Type": "text/html" },
+      });
+    });
   },
   development: {
     hmr: true,

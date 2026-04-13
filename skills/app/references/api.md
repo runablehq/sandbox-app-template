@@ -60,29 +60,45 @@ const app = new Hono()
 
 ## Server Entry Point
 
-`src/index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA:
+`src/index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA. API routing lives in `fetch()` (not `routes`) so all HTTP methods (POST, PUT, DELETE) work correctly — Bun.serve `routes` with catch-all patterns only handle GET.
 
 ```ts
+import { join } from "node:path";
 import appConfig from "../../../app.config.json";
 import app from "./api/app";
 import homepage from "./client/index.html";
 
+const publicDir = join(import.meta.dir, "..", "public");
 const port = appConfig.services.website.port;
 
 Bun.serve({
   port,
   routes: {
-    "/api": (req) => {
-      const url = new URL(req.url);
-      url.pathname = "/";
-      return app.fetch(new Request(url.toString(), req));
-    },
-    "/api/*": (req) => {
-      const url = new URL(req.url);
-      url.pathname = url.pathname.replace(/^\/api/, "") || "/";
-      return app.fetch(new Request(url.toString(), req));
-    },
-    "/*": homepage,
+    "/": homepage,
+  },
+  fetch(req) {
+    const url = new URL(req.url);
+
+    // Route /api/* to Hono (strips the /api prefix)
+    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
+      const apiUrl = new URL(url);
+      apiUrl.pathname = url.pathname.replace(/^\/api/, "") || "/";
+      return app.fetch(new Request(apiUrl.toString(), {
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+      }));
+    }
+
+    // Static files, then SPA fallback
+    const filePath = join(publicDir, url.pathname);
+    const file = Bun.file(filePath);
+    return file.exists().then((exists) => {
+      if (exists) return new Response(file);
+      return new Response(Bun.file(join(import.meta.dir, "client", "index.html")), {
+        headers: { "Content-Type": "text/html" },
+      });
+    });
   },
   development: {
     hmr: true,
