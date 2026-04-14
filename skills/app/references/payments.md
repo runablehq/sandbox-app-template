@@ -21,7 +21,7 @@ Install CLI: `bun add -D atmn@1.1.8` (project root)
 
 ## 2. Autumn Config
 
-Create `autumn.config.ts` in project root. `reset` and `price` are mutually exclusive on `item()`.
+Create `autumn.config.ts` in project root. `reset` and `price` are mutually exclusive on `item()`. The `included` value must be a non-negative integer.
 
 ```ts
 import { feature, plan, item } from "atmn";

@@ -22,7 +22,8 @@ The server port is defined in `app.config.json` at the project root — never ha
 ## Preflight
 
 1. Ask questions: what the app does, which platforms (web, mobile, desktop, or all), key features, data model, auth/payment needs.
-2. Form a plan. State assumptions as decisions — the user corrects what's wrong. Include: what's being built, which packages are touched, API routes, database tables, screens/pages, files to create/modify.
+2. If the user hasn't specified a UI theme/style, show a few inspiration images for UI reference; skip if their design intent is already clear.
+3. Form a plan. State assumptions as decisions — the user corrects what's wrong. Include: what's being built, which packages are touched, API routes, database tables, screens/pages, files to create/modify.
 
 Do not start implementation until the user approves or adjusts the plan.
 
