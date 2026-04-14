@@ -44,6 +44,7 @@ Do not start implementation until the user approves or adjusts the plan.
 - **Bun loads `.env` automatically** — no dotenv needed.
 - **Port comes from `app.config.json`** — read it at runtime, never hardcode.
 - **For any payment, subscription, or billing feature** — always consult [references/payments.md](references/payments.md) first. Use Autumn hooks (`useCustomer`, `useListPlans`) for plan display and checkout, never build custom payment logic.
+- **For any AI model, chatbot, or agent feature** — always consult [references/ai-agent.md](references/ai-agent.md) first. Use AI SDK with the Vercel AI Gateway provider, never build custom LLM integration logic.
 
 ### Preview
 
