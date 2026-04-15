@@ -41,7 +41,7 @@ Do not start implementation until the user approves or adjusts the plan.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
 - **Routes in `src/api/app.ts` are defined without `/api` prefix.** The prefix is applied by `src/index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
 - **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/client/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
-- **Bun loads `.env` automatically** — no dotenv needed.
+- **Bun loads `.env.local` automatically** — no dotenv needed.
 - **Port comes from `app.config.json`** — read it at runtime, never hardcode.
 - **For any payment, subscription, or billing feature** — always consult [references/payments.md](references/payments.md) first. Use Autumn hooks (`useCustomer`, `useListPlans`) for plan display and checkout, never build custom payment logic.
 - **For any AI model, chatbot, or agent feature** — always consult [references/ai-agent.md](references/ai-agent.md) first. Use AI SDK with the Vercel AI Gateway provider, never build custom LLM integration logic.

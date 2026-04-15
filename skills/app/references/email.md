@@ -14,7 +14,7 @@ cd packages/web && bun add resend
 
 ## 2. Add Environment Variable
 
-Add to `.env.template` and `.env`:
+Add to `.env.template` and `.env.local`:
 
 ```
 RESEND_API_KEY=
