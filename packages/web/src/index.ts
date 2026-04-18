@@ -21,24 +21,15 @@ function proxyToHono(req: Request): Response | Promise<Response> {
 Bun.serve({
   port,
   routes: {
-    // API routes — matched before the catch-all due to higher specificity
     "/api/*": proxyToHono,
-    // SPA catch-all — serves the HTML bundle for all non-API routes
-    // Bun routes are matched by specificity: exact > param > wildcard
-    // so "/api/*" always takes priority over "/*"
+    "/favicon.ico": Bun.file(join(publicDir, "favicon.ico")),
+    "/og-image.png": Bun.file(join(publicDir, "og-image.png")),
     "/*": homepage,
   },
-  async fetch(req) {
-    const url = new URL(req.url);
-    const filePath = join(publicDir, url.pathname);
-    const file = Bun.file(filePath);
-    if (await file.exists()) return new Response(file);
-    return new Response("Not Found", { status: 404 });
-  },
-  development: {
+  development: process.env.NODE_ENV !== "production" ? {
     hmr: true,
     console: true,
-  },
+  } : false,
 });
 
 export type { AppType } from "./api/app";
