@@ -1,52 +1,49 @@
-import type { Plugin } from "vite";
+import type { Plugin, ViteDevServer } from "vite";
 
 export default function honoDevPlugin(): Plugin {
-	return {
-		name: "hono-dev-server",
-		configureServer(server) {
-			server.middlewares.use(async (req, res, next) => {
-				if (!req.url?.startsWith("/api")) return next();
+  return {
+    name: "hono-dev-server",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith("/api")) return next();
 
-				try {
-					// Dynamic import so the module reloads on changes
-					const { default: app } = await server.ssrLoadModule("/src/api/index.ts");
+        try {
+          const request = await toWebRequest(req);
+          const app = await loadApp(server);
+          const response = await app.fetch(request);
 
-					const url = new URL(req.url, `http://${req.headers.host}`);
-					const headers = new Headers();
-					for (const [key, value] of Object.entries(req.headers)) {
-						if (value) headers.set(key, Array.isArray(value) ? value.join(", ") : value);
-					}
+          res.statusCode = response.status;
+          response.headers.forEach((value: string, key: string) => res.setHeader(key, value));
+          res.end(Buffer.from(await response.arrayBuffer()));
+        } catch (err) {
+          server.ssrFixStacktrace(err as Error);
+          console.error("[hono-dev]", err);
+          res.statusCode = 500;
+          res.end("Internal Server Error");
+        }
+      });
+    },
+  };
+}
 
-					let body: string | undefined;
-					if (req.method !== "GET" && req.method !== "HEAD") {
-						body = await new Promise<string>((resolve) => {
-							let data = "";
-							req.on("data", (chunk: string) => { data += chunk; });
-							req.on("end", () => resolve(data));
-						});
-					}
+async function loadApp(server: ViteDevServer) {
+  const mod = await server.ssrLoadModule("/src/api/index.ts");
+  return mod.default;
+}
 
-					const request = new Request(url.toString(), {
-						method: req.method,
-						headers,
-						body,
-					});
+function toWebRequest(req: import("http").IncomingMessage): Request {
+  const url = new URL(req.url!, `http://${req.headers.host}`);
+  const headers = new Headers();
+  for (const [key, val] of Object.entries(req.headers)) {
+    if (val) headers.set(key, Array.isArray(val) ? val.join(", ") : val);
+  }
 
-					const response = await app.fetch(request);
-
-					res.statusCode = response.status;
-					response.headers.forEach((value: string, key: string) => {
-						res.setHeader(key, value);
-					});
-
-					const responseBody = await response.arrayBuffer();
-					res.end(Buffer.from(responseBody));
-				} catch (err) {
-					console.error("[hono-dev-plugin]", err);
-					res.statusCode = 500;
-					res.end("Internal Server Error");
-				}
-			});
-		},
-	};
+  const hasBody = req.method !== "GET" && req.method !== "HEAD";
+  return new Request(url, {
+    method: req.method,
+    headers,
+    body: hasBody ? (req as unknown as ReadableStream) : undefined,
+    // @ts-expect-error duplex needed for streaming request bodies
+    duplex: hasBody ? "half" : undefined,
+  });
 }
