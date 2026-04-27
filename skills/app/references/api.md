@@ -2,24 +2,27 @@
 
 ## Overview
 
-`packages/web` runs a single Bun.serve process that serves both the Hono API (under `/api`) and the web frontend (via Bun's HTML imports). The port is defined in `app.config.json`.
+`packages/web` serves both the Hono API (under `/api`) and the web frontend via Vite. In development, a custom Vite plugin (`vite/plugins/hono-dev-plugin.ts`) intercepts `/api/*` requests and forwards them to the Hono app with hot-reloading via `ssrLoadModule`.
 
-- `src/index.ts` — server entry. Imports the web HTML and the Hono app, mounts API at `/api/*` with URL rewriting, and serves the web SPA at `/*`.
-- `src/api/app.ts` — Hono app definition + `AppType` export (consumed by frontend and mobile as a package)
+- `src/api/index.ts` — Hono app definition with `.basePath('api')`, CORS, routes, and `AppType` export (consumed by mobile as a package)
+- `vite/plugins/hono-dev-plugin.ts` — Vite middleware that serves the Hono API in dev
 
-**Routes in `src/api/app.ts` are defined without the `/api` prefix.** The prefix is applied by `src/index.ts` at the routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
+**Routes in `src/api/index.ts` are defined without the `/api` prefix.** The prefix is applied by Hono's `.basePath('api')`. A route `.get("/health", ...)` is accessible at `/api/health`.
 
 ## Adding API Routes
 
-All routes **must** be chained on the same `app` instance in `src/api/app.ts`. Breaking the chain breaks type inference for consumers.
+All routes **must** be chained on the same `app` instance in `src/api/index.ts`. Breaking the chain breaks type inference for consumers.
 
 ```ts
-// src/api/app.ts
+// src/api/index.ts
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { db } from "./database";
 import * as schema from "./database/schema";
 
 const app = new Hono()
+  .basePath("api")
+  .use(cors({ origin: "*" }))
   .get("/health", (c) => c.json({ status: "ok" }, 200))
   .get("/users", async (c) => {
     const users = await db.select().from(schema.users);
@@ -50,63 +53,29 @@ export const users = new Hono()
   .post("/", async (c) => { /* create */ })
   .get("/:id", async (c) => { /* get by id */ });
 
-// src/api/app.ts
+// src/api/index.ts
 import { users } from "./routes/users";
 
 const app = new Hono()
+  .basePath("api")
+  .use(cors({ origin: "*" }))
   .route("/users", users)
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 ```
 
-## Server Entry Point
+## Vite Dev Server
 
-`src/index.ts` mounts the Hono app under `/api` and serves the web frontend as a SPA. API routing lives in `fetch()` (not `routes`) so all HTTP methods (POST, PUT, DELETE) work correctly — Bun.serve `routes` with catch-all patterns only handle GET.
+The Hono API is served in dev via a Vite plugin (`vite/plugins/hono-dev-plugin.ts`). It intercepts `/api/*` requests and forwards them to the Hono app using Vite's `ssrLoadModule`, which provides hot-reloading. No separate server process needed.
 
 ```ts
-import { join } from "node:path";
-import appConfig from "../../../app.config.json";
-import app from "./api/app";
-import homepage from "./client/index.html";
+// vite.config.ts
+import honoDevPlugin from "./vite/plugins/hono-dev-plugin";
 
-const publicDir = join(import.meta.dir, "..", "public");
-const port = appConfig.services.website.port;
-
-Bun.serve({
-  port,
-  routes: {
-    "/": homepage,
-  },
-  fetch(req) {
-    const url = new URL(req.url);
-
-    // Route /api/* to Hono (strips the /api prefix)
-    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      const apiUrl = new URL(url);
-      apiUrl.pathname = url.pathname.replace(/^\/api/, "") || "/";
-      return app.fetch(new Request(apiUrl.toString(), {
-        method: req.method,
-        headers: req.headers,
-        body: req.body,
-      }));
-    }
-
-    // Static files from public/, then SPA fallback
-    const filePath = join(publicDir, url.pathname);
-    const file = Bun.file(filePath);
-    return file.exists().then((exists) => {
-      if (exists) return new Response(file);
-      // SPA fallback — return the Bun HTML import (bundled, with HMR)
-      return homepage as unknown as Response;
-    });
-  },
-  development: {
-    hmr: true,
-    console: true,
-  },
+export default defineConfig({
+  plugins: [honoDevPlugin(), react(), tailwind()],
+  // ...
 });
 ```
-
-The URL rewriting strips the `/api` prefix before passing to Hono, so routes in `src/api/app.ts` are defined without it.
 
 ## Database Schema
 
@@ -168,6 +137,7 @@ const logger = createMiddleware(async (c, next) => {
 });
 
 const app = new Hono()
+  .basePath("api")
   .use("*", logger)
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 ```
@@ -176,4 +146,4 @@ const app = new Hono()
 
 API-only (unprefixed): `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`, `AI_GATEWAY_BASE_URL`, `AI_GATEWAY_API_KEY`, `AUTUMN_SECRET_KEY`.
 
-Bun loads `.env.local` automatically — no dotenv needed.
+Vite loads `.env` and `.env.local` automatically.

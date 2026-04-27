@@ -2,7 +2,7 @@
 
 ## Overview
 
-The web frontend lives in `packages/web/src/client/` and is served by the same Bun.serve process as the API. Bun's HTML imports handle bundling, HMR, and serving — no separate dev server needed. Uses React, TanStack Router, and typed API calls via `@softnetics/hono-react-query`.
+The web frontend lives in `packages/web/src/web/` and is served by Vite in development. The API runs in the same process via a Vite plugin. Uses React, Wouter for routing, and typed API calls via `@softnetics/hono-react-query`.
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
@@ -15,111 +15,113 @@ This is the **single UI codebase** — it also runs inside the desktop Electron 
 ```
 packages/web/
   public/                        Static assets (favicon, images, fonts)
+  index.html                     Frontend HTML entry
+  vite.config.ts                 Vite config (React, Tailwind, Hono dev plugin)
+  vite/plugins/
+    hono-dev-plugin.ts           Serves Hono API in dev via Vite middleware
+    runable-analytics-plugin.ts  Injects analytics script
+  website.config.json            Website metadata (hostname, port)
   src/
-    index.ts                     Server entry (Bun.serve — API + web)
     api/                         Backend source
-      app.ts                     Hono routes + AppType export
+      index.ts                   Hono routes + AppType export
       database/                  Database (schema, client)
-    client/                      Frontend source
-      index.html                 Frontend HTML entry (imported by src/index.ts)
-      main.tsx                   App entry (QueryClientProvider + RouterProvider)
-      routeTree.gen.ts           Route tree (manual — add new routes here)
-      routes/
-        __root.tsx               Root layout (wraps all pages)
+    web/                         Frontend source
+      main.tsx                   App entry (Router)
+      app.tsx                    Root app component (Switch + routes)
+      styles.css                 Global styles (Tailwind)
+      pages/                     Page components
         index.tsx                / page
-      hooks/
-        use-desktop.ts           Desktop detection hook
-      lib/
-        api.ts                   Typed API client (baseUrl: "/api")
-        desktop.ts               ElectronAPI types + detection helpers
+      components/                Shared components
+        provider.tsx             App providers
+        ui/                      UI primitives
+      hooks/                     Custom hooks
+      lib/                       Utilities
+      types/                     Type definitions
 ```
 
 ## Adding Pages
 
-1. Create a route file in `src/client/routes/` using `createRoute`:
+1. Create a page component in `src/web/pages/`:
 
 ```tsx
-// src/client/routes/about.tsx
-import { createRoute } from "@tanstack/react-router";
-import { Route as rootRoute } from "./__root";
-
-export const Route = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/about",
-  component: AboutPage,
-});
-
-function AboutPage() {
+// src/web/pages/about.tsx
+export default function AboutPage() {
   return <h1>About</h1>;
 }
 ```
 
-2. Add it to `routeTree.gen.ts`:
+2. Add a route in `src/web/app.tsx`:
 
-```ts
-import { Route as rootRoute } from "./routes/__root"
-import { Route as IndexRoute } from "./routes/index"
-import { Route as AboutRoute } from "./routes/about"
+```tsx
+import { Route, Switch } from "wouter";
+import AboutPage from "./pages/about";
 
-export const routeTree = rootRoute.addChildren([
-  IndexRoute,
-  AboutRoute,
-])
+function App() {
+  return (
+    <Switch>
+      <Route path="/" component={Index} />
+      <Route path="/about" component={AboutPage} />
+    </Switch>
+  );
+}
 ```
 
 ### Dynamic routes
 
 ```tsx
-// src/client/routes/users/$id.tsx
-import { createRoute } from "@tanstack/react-router";
-import { Route as rootRoute } from "../__root";
-import { api } from "../../lib/api";
+// src/web/pages/user.tsx
+import { useParams } from "wouter";
+import { api } from "../lib/api";
 
-export const Route = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/users/$id",
-  component: UserPage,
-});
-
-function UserPage() {
-  const { id } = Route.useParams();
-  const user = api.useQuery("/users/:id", "$get", { param: { id } });
+export default function UserPage() {
+  const { id } = useParams<{ id: string }>();
+  const user = api.useQuery("api/users/:id", "$get", { param: { id } });
 
   if (user.isLoading) return <div>Loading...</div>;
 
-  return <h1>{user.data?.data.name}</h1>;
+  return <h1>{(user.data as any)?.data?.name}</h1>;
 }
+
+// In app.tsx:
+<Route path="/users/:id" component={UserPage} />
 ```
 
-### Layout routes
+### Nested layouts
 
 ```tsx
-// src/client/routes/__root.tsx
-import { createRootRoute, Outlet, Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
+// src/web/components/layout.tsx
+export function Layout({ children }: { children: React.ReactNode }) {
+  return (
     <div>
       <nav>
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
+        <a href="/">Home</a>
+        <a href="/about">About</a>
       </nav>
-      <Outlet />
+      {children}
     </div>
-  ),
-});
+  );
+}
+
+// In app.tsx, wrap routes:
+<Layout>
+  <Switch>
+    <Route path="/" component={Index} />
+    <Route path="/about" component={AboutPage} />
+  </Switch>
+</Layout>
 ```
 
 ## Typed API Client
 
-The API client is set up in `src/client/lib/api.ts` with a relative baseUrl of `/api` (same origin):
+The API client uses a base URL without `/api` since Hono's `.basePath('api')` includes it in route type paths:
 
 ```ts
+// src/web/lib/api.ts
 import { createReactQueryClient } from "@softnetics/hono-react-query";
-import type { AppType } from "@template/web";
+import type { AppType } from "../../api";
 
 export const api = createReactQueryClient<AppType>({
-  baseUrl: "/api",
+  baseUrl: "",
 });
 ```
 
@@ -129,17 +131,16 @@ export const api = createReactQueryClient<AppType>({
 import { api } from "../lib/api";
 
 // GET request — typed input, typed response
-const users = api.useQuery("/users", "$get", {});
-users.data?.data.users;  // fully typed
+const users = api.useQuery("api/users", "$get", {});
 
 // With parameters
-const user = api.useQuery("/users/:id", "$get", { param: { id: "1" } });
+const user = api.useQuery("api/users/:id", "$get", { param: { id: "1" } });
 ```
 
 ### Mutations
 
 ```tsx
-const createUser = api.useMutation("/users", "$post");
+const createUser = api.useMutation("api/users", "$post");
 
 createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
 ```
@@ -147,7 +148,7 @@ createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
 ### Query invalidation
 
 ```tsx
-const invalidateUsers = api.useInvalidateQueries("/users", "$get");
+const invalidateUsers = api.useInvalidateQueries("api/users", "$get");
 
 // After a mutation succeeds
 createUser.mutate(data, {
@@ -155,32 +156,4 @@ createUser.mutate(data, {
 });
 ```
 
-## Desktop-Aware Components
-
-The web app detects when it's running inside Electron via `useDesktop()`:
-
-```tsx
-import { useDesktop } from "../hooks/use-desktop";
-
-function SaveButton({ data }: { data: string }) {
-  const desktop = useDesktop();
-
-  const handleSave = async () => {
-    if (desktop) {
-      const path = await desktop.showSaveDialog({ title: "Save file" });
-      if (path) await desktop.writeFile(path, data);
-    } else {
-      const blob = new Blob([data], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "file.txt";
-      a.click();
-    }
-  };
-
-  return <button onClick={handleSave}>Save</button>;
-}
-```
-
-Available desktop APIs: `showOpenDialog`, `showSaveDialog`, `readFile`, `writeFile`, `showNotification`, `minimize`, `maximize`, `close`, `onDeepLink`. See `src/client/lib/desktop.ts` for full types.
+**Note:** Route paths in the typed client include the `api/` prefix (e.g., `"api/health"`, `"api/users"`) because Hono's `.basePath('api')` bakes it into the type.
