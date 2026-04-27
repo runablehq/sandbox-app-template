@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API port is read from `app.config.json`.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via the `EXPO_PUBLIC_API_URL` environment variable.
 
 ## Project Structure
 
@@ -19,6 +19,8 @@ packages/mobile/
     api.ts                   Typed API client
   assets/                    App icons, splash screen
   app.json                   Expo config
+  eas.json                   EAS build profiles with env vars
+  env.d.ts                   Type declarations for process.env
 ```
 
 ## Adding Screens
@@ -48,7 +50,7 @@ import { api } from "../../lib/api";
 
 export default function UserScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = api.useQuery("/users/:id", "$get", { param: { id } });
+  const user = api.useQuery("api/users/:id", "$get", { param: { id } });
 
   if (user.isLoading) return <ActivityIndicator />;
 
@@ -99,22 +101,24 @@ export default function TabLayout() {
 
 ## Typed API Client
 
-Same pattern as web, but with an absolute base URL pointing to the server with the `/api` prefix. The client is in `lib/api.ts`:
+The client is in `lib/api.ts`. The base URL comes from `EXPO_PUBLIC_API_URL` with a localhost fallback for development:
 
 ```ts
 import { createReactQueryClient } from "@softnetics/hono-react-query";
-import type { AppType } from "@template/web";
 import { Platform } from "react-native";
-import appConfig from "../../../app.config.json";
+import type { AppType } from "@template/web";
 
-const websitePort = appConfig.services.website.port;
-const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${websitePort}/api`,
-  default: `http://localhost:${websitePort}/api`,
-});
+const baseUrl =
+  process.env.EXPO_PUBLIC_API_URL ??
+  Platform.select({
+    android: "http://10.0.2.2:3000",
+    default: "http://localhost:3000",
+  });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });
 ```
+
+**Note:** The `baseUrl` does NOT include `/api`. Hono's `.basePath('api')` bakes the prefix into the route type paths (e.g., `"api/health"`), so the library appends it automatically.
 
 Usage:
 
@@ -122,41 +126,57 @@ Usage:
 import { api } from "../lib/api";
 
 // Queries
-const users = api.useQuery("/users", "$get", {});
+const users = api.useQuery("api/users", "$get", {});
 
 // Mutations
-const createUser = api.useMutation("/users", "$post");
+const createUser = api.useMutation("api/users", "$post");
 createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
 ```
 
-## API Base URL
+## API URL Configuration
 
-The mobile app needs the API URL to be reachable from the device/simulator:
+The API URL is set per environment via `EXPO_PUBLIC_API_URL` in `eas.json`:
 
-- **iOS Simulator:** `http://localhost:<port>/api` works.
-- **Android Emulator:** Use `http://10.0.2.2:<port>/api` (Android's alias for host localhost).
-- **Physical device:** Use your machine's LAN IP.
+```json
+{
+  "build": {
+    "development": {
+      "env": { "EXPO_PUBLIC_API_URL": "http://localhost:3000" }
+    },
+    "preview": {
+      "env": { "EXPO_PUBLIC_API_URL": "https://your-staging-domain.com" }
+    },
+    "production": {
+      "env": { "EXPO_PUBLIC_API_URL": "https://your-prod-domain.com" }
+    }
+  }
+}
+```
 
-Update `lib/api.ts` if needed:
+For local dev, the fallback in `lib/api.ts` handles it automatically:
+- **iOS Simulator:** `http://localhost:3000`
+- **Android Emulator:** `http://10.0.2.2:3000` (Android's alias for host localhost)
+- **Physical device:** Set `EXPO_PUBLIC_API_URL` to your machine's LAN IP
+
+Type declarations for `process.env` are in `env.d.ts`:
 
 ```ts
-import { Platform } from "react-native";
-import appConfig from "../../../app.config.json";
+declare namespace NodeJS {
+  interface ProcessEnv {
+    EXPO_PUBLIC_API_URL?: string;
+  }
+}
 
-const websitePort = appConfig.services.website.port;
-const baseUrl = Platform.select({
-  android: `http://10.0.2.2:${websitePort}/api`,
-  default: `http://localhost:${websitePort}/api`,
-});
-
-export const api = createReactQueryClient<AppType>({ baseUrl });
+declare const process: {
+  env: NodeJS.ProcessEnv;
+};
 ```
 
 ## Running
 
 ```bash
 cd packages/mobile
-bun run dev            # Expo dev server, port from app.config.json
-bun run ios            # iOS simulator, port from app.config.json
-bun run android        # Android emulator, port from app.config.json
+bun run dev            # Expo dev server
+bun run ios            # iOS simulator
+bun run android        # Android emulator
 ```

@@ -9,15 +9,13 @@ description: Use for any app creation task — planning, implementing pages, scr
 
 Monorepo: Bun workspaces + Turborepo.
 
-- **Server:** Bun.serve — serves both the Hono API (under `/api`) and the web frontend (via HTML imports) from a single process in `packages/web`
-- **API:** Hono, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
-- **Web Frontend:** React + TanStack Router, bundled by Bun's HTML imports — source in `packages/web/src/client/`
-- **Mobile:** Expo + React Native + expo-router — Expo dev server port comes from `app.config.json`
+- **Server:** Vite dev server — serves the web frontend and the Hono API (via `vite/plugins/hono-dev-plugin.ts` which intercepts `/api/*` requests) from `packages/web`
+- **API:** Hono with `.basePath('api')`, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
+- **Web Frontend:** React + Wouter, bundled by Vite — source in `packages/web/src/web/`
+- **Mobile:** Expo + React Native + expo-router — API URL configured via `EXPO_PUBLIC_API_URL` env var in `eas.json`
 - **Desktop:** Electron shell + Vite (loads the web app from the server, exposes native APIs via IPC) — Vite/Electron ports come from `app.config.json`
 
-Typed end-to-end: `packages/web` exports `AppType`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
-
-The server port is defined in `app.config.json` at the project root — never hardcode it.
+Typed end-to-end: `packages/web` exports `AppType` from `src/api/index.ts`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
 
 ## Preflight
 
@@ -37,21 +35,21 @@ Do not start implementation until the user approves or adjusts the plan.
 
 ### Key Rules
 
-- **All API routes must be chained** on the same `app` instance in `packages/web/src/api/app.ts`. Breaking the chain breaks type inference.
+- **All API routes must be chained** on the same `app` instance in `packages/web/src/api/index.ts`. Breaking the chain breaks type inference.
 - **Always pass explicit status codes** — `c.json(data, 200)`, never `c.json(data)`. Without this, the typed RPC client resolves response types to `never`.
-- **Routes in `src/api/app.ts` are defined without `/api` prefix.** The prefix is applied by `src/index.ts` at the Bun.serve routing level. A route `.get("/health", ...)` is accessible at `/api/health`.
-- **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/client/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
-- **Bun loads `.env.local` automatically** — no dotenv needed.
-- **Port comes from `app.config.json`** — read it at runtime, never hardcode.
+- **Routes in `src/api/index.ts` are defined without `/api` prefix.** The prefix is applied by Hono's `.basePath('api')`. A route `.get("/health", ...)` is accessible at `/api/health`.
+- **Route paths in the typed client include the `api/` prefix** (e.g., `"api/health"`, `"api/users"`) because `.basePath('api')` bakes it into the type.
+- **The `baseUrl` for API clients does NOT include `/api`** — just the origin (e.g., `http://localhost:3000` or `""`). The `api/` prefix comes from the route type paths.
+- **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/web/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
+- **Vite loads `.env` and `.env.local` automatically** — no dotenv needed.
+- **Mobile API URL comes from `EXPO_PUBLIC_API_URL`** env var set in `eas.json`, with a localhost fallback in `lib/api.ts`.
 - **For any payment, subscription, or billing feature** — always consult [references/payments.md](references/payments.md) first. Use Autumn hooks (`useCustomer`, `useListPlans`) for plan display and checkout, never build custom payment logic.
 - **For any AI model, chatbot, or agent feature** — always consult [references/ai-agent.md](references/ai-agent.md) first. Use AI SDK with the Vercel AI Gateway provider, never build custom LLM integration logic.
 
 ### Preview
 
-Read `app.config.json` for the server port, then:
-
 ```bash
-# Start the server (API + web)
+# Start the server (API + web via Vite)
 bun run dev
 
 # Individual platforms

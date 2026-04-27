@@ -74,25 +74,24 @@ Add `autumn()` plugin in `packages/web/src/api/auth.ts`. This registers all Autu
 ```ts
 import { autumn } from "autumn-js/better-auth";
 
-export const createAuth = (baseURL: string) =>
-  betterAuth({
-    // ...existing config
-    plugins: [autumn()],
-  });
+export const auth = betterAuth({
+  // ...existing config
+  plugins: [autumn()],
+});
 ```
 
 ## 4. Provider Setup (Web)
 
-In `packages/web/src/client/main.tsx`:
+In `packages/web/src/web/main.tsx`:
 
 ```tsx
 import { AutumnProvider } from "autumn-js/react";
 
-<QueryClientProvider client={queryClient}>
+<Router>
   <AutumnProvider useBetterAuth>
-    <RouterProvider router={router} />
+    <App />
   </AutumnProvider>
-</QueryClientProvider>
+</Router>
 ```
 
 ## 5. Provider Setup (Mobile)
@@ -178,18 +177,20 @@ await autumn.track({
 
 ## 8. Handler (non-Better-Auth)
 
-Only needed if **not** using the Better Auth plugin. The Hono handler's `identify` receives the Hono `Context`, not a raw Request. Mount in `src/index.ts` before the `/api` strip, same pattern as auth:
+Only needed if **not** using the Better Auth plugin. Mount in `src/api/index.ts`:
 
 ```ts
 import { autumnHandler } from "autumn-js/hono";
 
-// In a Hono sub-app or directly:
-app.all("/autumn/*", autumnHandler({
-  identify: (c) => {
-    const user = c.get("user");
-    return { customerId: user?.id };
-  },
-}));
+const app = new Hono()
+  .basePath("api")
+  // ...existing routes
+  .all("/autumn/*", autumnHandler({
+    identify: (c) => {
+      const user = c.get("user");
+      return { customerId: user?.id };
+    },
+  }));
 ```
 
 When using this handler without Better Auth, set `AutumnProvider` without `useBetterAuth` and pass `backendUrl` + `pathPrefix` manually.

@@ -25,30 +25,21 @@ cd packages/mobile && bun add better-auth@1.4.22
 
 Create `packages/web/src/api/auth.ts`.
 
-`basePath` must be `/api/auth` and `baseURL` must be just the origin (e.g., `http://localhost:3000`). Auth is handled in `src/index.ts` before the `/api` prefix is stripped, so Better Auth receives the original request URL with `/api/auth/...` intact.
+`basePath` must be `/api/auth`. Auth routes are served by the Hono app under the `/api` basePath, so Better Auth receives requests at `/api/auth/...`.
 
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import appConfig from "../../../../app.config.json";
 import { db } from "./database";
 
-export const createAuth = (baseURL: string) =>
-  betterAuth({
-    basePath: "/api/auth",
-    baseURL,
-    database: drizzleAdapter(db, { provider: "sqlite" }),
-    emailAndPassword: { enabled: true },
-    secret: process.env.BETTER_AUTH_SECRET,
-    trustedOrigins: async (request) => {
-      const origin = request?.headers.get("origin");
-      if (origin) return [origin];
-      return [`http://localhost:${appConfig.services.website.port}`];
-    },
-  });
-
-// Static export for CLI schema generation only.
-export const auth = createAuth(`http://localhost:${appConfig.services.website.port}`);
+export const auth = betterAuth({
+  basePath: "/api/auth",
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  database: drizzleAdapter(db, { provider: "sqlite" }),
+  emailAndPassword: { enabled: true },
+  secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: ["http://localhost:3000", "http://localhost:8081"],
+});
 ```
 
 ## 3. Generate Auth Schema
@@ -66,22 +57,24 @@ export * from "./auth-schema";
 
 Then push: `bun run db:push`
 
-## 4. Mount Auth in Server
+## 4. Mount Auth in Hono
 
-Add to `src/index.ts` in the `fetch()` handler, **before** the `/api` strip block:
+Add auth routes to `src/api/index.ts` by chaining `.all()`:
 
 ```ts
-import { createAuth } from "./api/auth";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { auth } from "./auth";
 
-// Inside fetch(req):
-if (url.pathname.startsWith("/api/auth")) {
-  const baseURL = `${url.protocol}//${url.host}`;
-  const auth = createAuth(baseURL);
-  return auth.handler(req);
-}
+const app = new Hono()
+  .basePath("api")
+  .use(cors({ origin: "*" }))
+  .all("/auth/**", (c) => auth.handler(c.req.raw))
+  .get("/health", (c) => c.json({ status: "ok" }, 200));
+
+export type AppType = typeof app;
+export default app;
 ```
-
-**Do NOT mount auth in `app.ts`.** Hono only sees requests after `/api` is stripped. Better Auth needs the full `/api/auth/...` path.
 
 ## 5. Auth Middleware
 
@@ -89,15 +82,9 @@ Create `packages/web/src/api/middleware/auth.ts`:
 
 ```ts
 import { createMiddleware } from "hono/factory";
-import { createAuth } from "../auth";
-
-const getBaseURL = (req: Request) => {
-  const url = new URL(req.url);
-  return `${url.protocol}//${url.host}`;
-};
+import { auth } from "../auth";
 
 export const authMiddleware = createMiddleware(async (c, next) => {
-  const auth = createAuth(getBaseURL(c.req.raw));
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   c.set("user", session?.user ?? null);
   c.set("session", session?.session ?? null);
@@ -112,7 +99,7 @@ export const requireAuth = createMiddleware(async (c, next) => {
 
 ## 6. Web Auth Client
 
-Create `packages/web/src/client/lib/auth.ts`:
+Create `packages/web/src/web/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
@@ -139,33 +126,44 @@ Create `packages/mobile/lib/auth.ts`:
 ```ts
 import { createAuthClient } from "better-auth/react";
 import { Platform } from "react-native";
-import appConfig from "../../../app.config.json";
 
-const websitePort = appConfig.services.website.port;
+const baseURL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  Platform.select({
+    android: "http://10.0.2.2:3000",
+    default: "http://localhost:3000",
+  });
 
 export const authClient = createAuthClient({
-  baseURL: Platform.select({
-    android: `http://10.0.2.2:${websitePort}`,
-    default: `http://localhost:${websitePort}`,
-  }),
+  baseURL,
   basePath: "/api/auth",
 });
 ```
 
 ## 8. Protected Routes
 
-### Web (TanStack Router)
+### Web (Wouter)
 
 ```tsx
-export const Route = createRootRoute({
-  beforeLoad: async ({ location }) => {
-    const { data: session } = await authClient.getSession();
-    if (!session && location.pathname !== "/sign-in" && location.pathname !== "/sign-up") {
-      throw redirect({ to: "/sign-in" });
-    }
-  },
-  component: () => <Outlet />,
-});
+// src/web/components/protected-route.tsx
+import { Redirect } from "wouter";
+import { authClient } from "../lib/auth";
+
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { data: session, isPending } = authClient.useSession();
+
+  if (isPending) return <div>Loading...</div>;
+  if (!session) return <Redirect to="/sign-in" />;
+
+  return <>{children}</>;
+}
+
+// In app.tsx:
+<Route path="/dashboard">
+  <ProtectedRoute>
+    <DashboardPage />
+  </ProtectedRoute>
+</Route>
 ```
 
 ### Mobile (Expo Router)

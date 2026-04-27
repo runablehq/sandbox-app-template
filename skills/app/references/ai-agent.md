@@ -94,13 +94,15 @@ export const agent = new ToolLoopAgent({
 
 ## 4. API Route
 
-Add agent route to `packages/web/src/api/app.ts` (no `/api` prefix — it's applied by `src/index.ts`):
+Add agent route to `packages/web/src/api/index.ts`. Routes use `.basePath('api')` so the endpoint is accessible at `/api/agent/messages`:
 
 ```ts
 import { createAgentUIStreamResponse } from "ai";
 import { agent } from "./agent";
 
 const app = new Hono()
+  .basePath("api")
+  .use(cors({ origin: "*" }))
   // ...existing routes
   .post("/agent/messages", async (c) => {
     const { messages } = await c.req.json();
@@ -108,29 +110,22 @@ const app = new Hono()
   });
 ```
 
-The endpoint is accessible at `/api/agent/messages`.
-
 ## 5. Web Chat UI
 
-The API is on the same origin, so use a relative URL:
+The API is on the same origin, so use a relative URL with the `api/` prefix:
 
 ```tsx
-// packages/web/src/client/routes/chat.tsx
-import { createFileRoute } from "@tanstack/react-router";
+// packages/web/src/web/pages/chat.tsx
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useState } from "react";
-
-export const Route = createFileRoute("/chat")({
-  component: ChatPage,
-});
 
 function MessagePart({ part }: { part: UIMessage["parts"][number] }) {
   if (part.type === "text") return <span>{part.text}</span>;
   return null;
 }
 
-function ChatPage() {
+export default function ChatPage() {
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/agent/messages" }),
   });
@@ -166,6 +161,9 @@ function ChatPage() {
     </div>
   );
 }
+
+// In app.tsx:
+// <Route path="/chat" component={ChatPage} />
 ```
 
 ## 6. Mobile Chat UI
@@ -176,16 +174,16 @@ import { View, TextInput, FlatList, Text, Pressable, KeyboardAvoidingView, Platf
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
-import appConfig from "../../../app.config.json";
 
 export default function ChatScreen() {
-  const websitePort = appConfig.services.website.port;
-  const baseUrl = Platform.select({
-    android: `http://10.0.2.2:${websitePort}/api`,
-    default: `http://localhost:${websitePort}/api`,
-  });
+  const baseUrl =
+    process.env.EXPO_PUBLIC_API_URL ??
+    Platform.select({
+      android: "http://10.0.2.2:3000",
+      default: "http://localhost:3000",
+    });
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: `${baseUrl}/agent/messages` }),
+    transport: new DefaultChatTransport({ api: `${baseUrl}/api/agent/messages` }),
   });
   const [input, setInput] = useState("");
   const isLoading = status === "streaming" || status === "submitted";
