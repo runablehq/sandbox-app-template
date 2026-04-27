@@ -2,20 +2,9 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:3000"
-      }
+      "distribution": "internal"
     },
-    "preview": {
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://your-staging-domain.com"
-      }
-    },
-    "production": {
-      "env": {
-        "EXPO_PUBLIC_API_URL": "https://your-prod-domain.com"
-      }
-    }
+    "preview": {},
+    "production": {}
   }
 }
