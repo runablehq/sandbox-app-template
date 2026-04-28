@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via the `EXPO_PUBLIC_API_URL` environment variable.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via `extra.apiUrl` in `app.json`.
 
 ## Project Structure
 
@@ -21,6 +21,9 @@ packages/mobile/
   app.json                   Expo config
   eas.json                   EAS build profiles with env vars
   env.d.ts                   Type declarations for process.env
+  web/
+    src/
+      api/                   For all the api endpoints/database
 ```
 
 ## Adding Screens
@@ -101,14 +104,16 @@ export default function TabLayout() {
 
 ## Typed API Client
 
-The client is in `lib/api.ts`. The base URL comes from `EXPO_PUBLIC_API_URL` with a localhost fallback for development:
+The client is in `lib/api.ts`. The base URL comes from `extra.apiUrl` in `app.json`(default is web package api routes), with fallbacks to `EXPO_PUBLIC_API_URL` and platform-specific localhost defaults:
 
 ```ts
 import { createReactQueryClient } from "@softnetics/hono-react-query";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { AppType } from "@template/web";
 
 const baseUrl =
+  Constants.expoConfig?.extra?.apiUrl ??
   process.env.EXPO_PUBLIC_API_URL ??
   Platform.select({
     android: "http://10.0.2.2:3000",
@@ -131,45 +136,6 @@ const users = api.useQuery("api/users", "$get", {});
 // Mutations
 const createUser = api.useMutation("api/users", "$post");
 createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
-```
-
-## API URL Configuration
-
-The API URL is set per environment via `EXPO_PUBLIC_API_URL` in `eas.json`:
-
-```json
-{
-  "build": {
-    "development": {
-      "env": { "EXPO_PUBLIC_API_URL": "http://localhost:3000" }
-    },
-    "preview": {
-      "env": { "EXPO_PUBLIC_API_URL": "https://your-staging-domain.com" }
-    },
-    "production": {
-      "env": { "EXPO_PUBLIC_API_URL": "https://your-prod-domain.com" }
-    }
-  }
-}
-```
-
-For local dev, the fallback in `lib/api.ts` handles it automatically:
-- **iOS Simulator:** `http://localhost:3000`
-- **Android Emulator:** `http://10.0.2.2:3000` (Android's alias for host localhost)
-- **Physical device:** Set `EXPO_PUBLIC_API_URL` to your machine's LAN IP
-
-Type declarations for `process.env` are in `env.d.ts`:
-
-```ts
-declare namespace NodeJS {
-  interface ProcessEnv {
-    EXPO_PUBLIC_API_URL?: string;
-  }
-}
-
-declare const process: {
-  env: NodeJS.ProcessEnv;
-};
 ```
 
 ## Running
