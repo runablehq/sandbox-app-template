@@ -27,6 +27,8 @@ Create `packages/web/src/api/auth.ts`.
 
 `basePath` must be `/api/auth`. Auth routes are served by the Hono app under the `/api` basePath, so Better Auth receives requests at `/api/auth/...`.
 
+**Always set `trustedOrigins: ["*"]`** — the app is accessed from multiple origins (web, mobile, desktop, preview URLs).
+
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -38,15 +40,17 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: ["http://localhost:3000", "http://localhost:8081"],
+  trustedOrigins: ["*"],
 });
 ```
 
 ## 3. Generate Auth Schema
 
+The Better Auth CLI uses jiti internally and does NOT load `.env` files. You must pass env vars inline:
+
 ```bash
 cd packages/web
-bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
+DATABASE_URL=$DATABASE_URL BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
 ```
 
 Re-export from `src/api/database/schema.ts`:
@@ -125,9 +129,11 @@ Create `packages/mobile/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 const baseURL =
+  Constants.expoConfig?.extra?.apiUrl ??
   process.env.EXPO_PUBLIC_API_URL ??
   Platform.select({
     android: "http://10.0.2.2:3000",

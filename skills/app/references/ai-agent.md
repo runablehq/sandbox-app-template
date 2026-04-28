@@ -106,7 +106,7 @@ const app = new Hono()
   // ...existing routes
   .post("/agent/messages", async (c) => {
     const { messages } = await c.req.json();
-    return createAgentUIStreamResponse({ agent, messages });
+    return createAgentUIStreamResponse({ agent, uiMessages: messages });
   });
 ```
 
@@ -173,10 +173,12 @@ export default function ChatPage() {
 import { View, TextInput, FlatList, Text, Pressable, KeyboardAvoidingView, Platform } from "react-native";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import Constants from "expo-constants";
 import { useState } from "react";
 
 export default function ChatScreen() {
   const baseUrl =
+    Constants.expoConfig?.extra?.apiUrl ??
     process.env.EXPO_PUBLIC_API_URL ??
     Platform.select({
       android: "http://10.0.2.2:3000",

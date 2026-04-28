@@ -82,6 +82,8 @@ export const auth = betterAuth({
 
 ## 4. Provider Setup (Web)
 
+`AutumnProvider` with `useBetterAuth` sets `pathPrefix` to `/api/auth/autumn` and includes credentials (cookies) automatically. All Autumn hooks (plans, customer, attach) use POST requests through Better Auth's plugin endpoints.
+
 In `packages/web/src/web/main.tsx`:
 
 ```tsx
@@ -117,11 +119,11 @@ export default function RootLayout() {
 
 ## 6. Frontend Usage
 
-`useListPlans` returns `Plan[]` directly. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]`, and `customerEligibility` (`{ attachAction, status }`).
+`useListPlans` returns `Plan[]` directly. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]` (each has `display.primaryText`), and `customerEligibility` (`{ attachAction, status }`). Use `customerEligibility.status === "active"` to detect the current plan and `attachAction` (`"upgrade"`, `"downgrade"`, `"none"`) for button labels.
 
-`useCustomer` returns `Customer` with `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`).
+`useCustomer` returns `{ data: Customer, attach, isPending, ... }`. Customer has `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`). Customer is auto-created on first `getOrCreateCustomer` call — free plan with `autoEnable: true` is applied automatically.
 
-`attach` takes `{ planId, successUrl? }` — returns a Stripe checkout URL for paid plans, applies immediately for free.
+`attach` takes `{ planId, successUrl? }` — redirects to Stripe checkout for paid plans, applies immediately for free and invalidates queries. Price `amount` is in **cents** — divide by 100 for display (e.g. `amount: 2000` = $20).
 
 ```tsx
 import { useCustomer, useListPlans } from "autumn-js/react";
