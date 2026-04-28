@@ -146,4 +146,4 @@ const app = new Hono()
 
 API-only (unprefixed): `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`, `AI_GATEWAY_BASE_URL`, `AI_GATEWAY_API_KEY`, `AUTUMN_SECRET_KEY`.
 
-Vite loads `.env` and `.env.local` automatically.
+Vite loads `.env` automatically.

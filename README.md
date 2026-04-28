@@ -6,7 +6,7 @@ Monorepo: Bun workspaces + Turborepo.
 
 ```
 app.config.json              Service config (ports, commands) — source of truth
-.env.local                   Secrets (gitignored)
+.env                         Secrets (gitignored)
 packages/
   web/                       Unified server (API + web frontend)
     src/
@@ -48,7 +48,7 @@ The desktop app has no separate renderer by default. It loads the web app from `
 
 ## Environment Variables
 
-Secrets and credentials live in `.env.local` at the project root (gitignored). Bun loads it automatically.
+Secrets and credentials live in `.env` at the project root (gitignored). Bun loads it automatically.
 
 ## Dev Commands
 

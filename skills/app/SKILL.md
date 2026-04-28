@@ -41,7 +41,7 @@ Do not start implementation until the user approves or adjusts the plan.
 - **Route paths in the typed client include the `api/` prefix** (e.g., `"api/health"`, `"api/users"`) because `.basePath('api')` bakes it into the type.
 - **The `baseUrl` for API clients does NOT include `/api`** — just the origin (e.g., `http://localhost:3000` or `""`). The `api/` prefix comes from the route type paths.
 - **Desktop has no separate renderer by default.** It loads the web app. Desktop-specific UI still lives in `packages/web/src/web/` and is gated with `useDesktop()` / `window.electronAPI`. Native functionality lives in `packages/desktop` and is exposed via IPC. Only create a separate desktop renderer if the user explicitly asks for a different desktop-only UI architecture.
-- **Vite loads `.env` and `.env.local` automatically** — no dotenv needed.
+- **Vite loads `.env` automatically** — no dotenv needed. **Always use `.env` for secrets, never `.env.local`.**
 - **Mobile API URL comes from `EXPO_PUBLIC_API_URL`** env var set in `eas.json`, with a localhost fallback in `lib/api.ts`.
 - **For any payment, subscription, or billing feature** — always consult [references/payments.md](references/payments.md) first. Use Autumn hooks (`useCustomer`, `useListPlans`) for plan display and checkout, never build custom payment logic.
 - **For any AI model, chatbot, or agent feature** — always consult [references/ai-agent.md](references/ai-agent.md) first. Use AI SDK with the Vercel AI Gateway provider, never build custom LLM integration logic.
