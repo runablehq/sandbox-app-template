@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via `extra.apiUrl` in `app.json`. When the port in `app.config.json` changes, update `packages/mobile/app.json` → `expo.extra.apiUrl` to match.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing), `hono/client` for typed API calls, and `@tanstack/react-query` for queries and mutations. The API URL is configured via `extra.apiUrl` in `app.json`. When the port in `app.config.json` changes, update `packages/mobile/app.json` → `expo.extra.apiUrl` to match.
 
 ## Project Structure
 
@@ -49,17 +49,21 @@ export default function ProfileScreen() {
 // app/users/[id].tsx
 import { View, Text, ActivityIndicator } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 
 export default function UserScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const user = api.useQuery("api/users/:id", "$get", { param: { id } });
+  const user = useQuery({
+    queryKey: ["user", id],
+    queryFn: async () => (await api.users[":id"].$get({ param: { id } })).json(),
+  });
 
   if (user.isLoading) return <ActivityIndicator />;
 
   return (
     <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 24 }}>{user.data?.data.name}</Text>
+      <Text style={{ fontSize: 24 }}>{user.data?.name}</Text>
     </View>
   );
 }
@@ -104,10 +108,11 @@ export default function TabLayout() {
 
 ## Typed API Client
 
-The client is in `lib/api.ts`. The base URL comes from `extra.apiUrl` in `app.json`(default is web package api routes), with fallbacks to `EXPO_PUBLIC_API_URL` and platform-specific localhost defaults:
+Uses `hono/client` for typed calls and `@tanstack/react-query` for state management:
 
 ```ts
-import { createReactQueryClient } from "@softnetics/hono-react-query";
+// lib/api.ts
+import { hc } from "hono/client";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { AppType } from "@template/web";
@@ -123,22 +128,52 @@ const baseUrl =
     default: `http://localhost:${port}`,
   });
 
-export const api = createReactQueryClient<AppType>({ baseUrl });
+const client = hc<AppType>(baseUrl!);
+export const api = client.api;
 ```
-
-**Note:** The `baseUrl` does NOT include `/api`. Hono's `.basePath('api')` bakes the prefix into the route type paths (e.g., `"api/health"`), so the library appends it automatically.
 
 Usage:
 
 ```tsx
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
 // Queries
-const users = api.useQuery("api/users", "$get", {});
+const users = useQuery({
+  queryKey: ["users"],
+  queryFn: async () => (await api.users.$get()).json(),
+});
 
 // Mutations
-const createUser = api.useMutation("api/users", "$post");
-createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
+const queryClient = useQueryClient();
+const createUser = useMutation({
+  mutationFn: async (data: { name: string; email: string }) =>
+    (await api.users.$post({ json: data })).json(),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+});
+```
+
+### Optimistic updates
+
+Use optimistic updates for mutations where the result is predictable (toggles, likes, deletes, status changes). Update the UI instantly, revert on error.
+
+```tsx
+const queryClient = useQueryClient();
+const deleteTodo = useMutation({
+  mutationFn: async (id: string) => {
+    await api.todos[":id"].$delete({ param: { id } });
+  },
+  onMutate: async (id) => {
+    const prev = queryClient.getQueryData(["todos"]);
+    queryClient.setQueryData(["todos"], (old: any) =>
+      old?.filter((t: any) => t.id !== id)
+    );
+    return { prev };
+  },
+  onError: (_err, _id, context) => {
+    queryClient.setQueryData(["todos"], context?.prev);
+  },
+});
 ```
 
 ## Running

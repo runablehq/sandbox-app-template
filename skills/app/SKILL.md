@@ -19,7 +19,7 @@ Monorepo: Bun workspaces + Turborepo.
 
 All service configuration lives in `app.config.json` at the project root. Read this file to get ports and dev commands for each service. The template code reads ports from this file; do not hardcode ports in application code, agent examples, or platform clients. The web service serves both the API at `/api/*` and the web frontend at `/*` from a single web port.
 
-Typed end-to-end: `packages/web` exports `AppType` from `src/api/index.ts`, all clients use `@softnetics/hono-react-query` for fully typed queries and mutations.
+Typed end-to-end: `packages/web` exports `AppType` from `src/api/index.ts`, all clients use `hono/client` for typed API calls and `@tanstack/react-query` for queries and mutations.
 
 ## Preflight
 
@@ -54,7 +54,7 @@ Document design direction in `design.md` inside the website project directory be
 - **Routes should be defined without `/api` prefix.** `.basePath('api')` adds it. `.get("/health", ...)` → `/api/health`.
 - **Typed client paths include `api/`** (e.g., `"api/health"`). `baseUrl` is just the origin — no `/api`.
 - **Desktop loads the web app** — no separate renderer. Gate desktop UI with `useDesktop()` / `window.electronAPI`. Only create a separate renderer if explicitly asked.
-- **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`.
+- **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`. Vite also auto-sets `BETTER_AUTH_URL` from `app.config.json` port.
 - **Mobile API URL** comes from `extra.apiUrl` in `app.json`. Always set this port to match `app.config.json`.
 - **Never hardcode ports** — always read from `app.config.json`. Import it as `import appConfig from "../../app.config.json"` and use `appConfig.services.website.port`.
 - **Before starting a dev server**, kill any process already running on that port: `lsof -ti:<port> | xargs kill -9 2>/dev/null`.

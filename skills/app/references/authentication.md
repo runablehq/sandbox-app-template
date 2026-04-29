@@ -33,13 +33,10 @@ Create `packages/web/src/api/auth.ts`.
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./database";
-import appConfig from "../../../app.config.json";
-
-const port = appConfig.services.website.port;
 
 export const auth = betterAuth({
   basePath: "/api/auth",
-  baseURL: process.env.BETTER_AUTH_URL ?? `http://localhost:${port}`,
+  baseURL: process.env.BETTER_AUTH_URL,
   database: drizzleAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
@@ -47,16 +44,18 @@ export const auth = betterAuth({
 });
 ```
 
+`BETTER_AUTH_URL` is auto-set by `vite.config.ts` from `app.config.json` port — no need to import the JSON here. Do **not** use `import appConfig from "../../../app.config.json"` in this file — the Better Auth CLI uses jiti which cannot resolve JSON imports outside the package.
+
 ## 3. Generate Auth Schema
 
-The Better Auth CLI uses jiti internally and does NOT load `.env` files. You must pass env vars inline:
+The CLI uses jiti (not bun env loading). Pass env vars inline. Run generate BEFORE adding `export * from "./auth-schema"` to `schema.ts` — the CLI fails if the target file doesn't exist yet.
 
 ```bash
 cd packages/web
 DATABASE_URL=$DATABASE_URL BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
 ```
 
-Re-export from `src/api/database/schema.ts`:
+After the schema file is generated, re-export from `src/api/database/schema.ts`:
 
 ```ts
 export * from "./auth-schema";

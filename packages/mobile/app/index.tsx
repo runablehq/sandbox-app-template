@@ -1,9 +1,16 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
 export default function Index() {
-  const health = api.useQuery("api/health", "$get", {});
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: async () => {
+      const res = await api.health.$get();
+      return res.json();
+    },
+  });
 
   return (
     <View style={styles.container}>
@@ -13,7 +20,7 @@ export default function Index() {
       ) : health.isError ? (
         <Text>API Error</Text>
       ) : (
-        <Text>API Status: {(health.data as any)?.data?.status}</Text>
+        <Text>API Status: {health.data?.status}</Text>
       )}
       <StatusBar style="auto" />
     </View>

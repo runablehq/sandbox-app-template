@@ -69,14 +69,34 @@ Push to Autumn: `npx atmn push -y`
 
 ## 3. Better Auth Plugin
 
-Add `autumn()` plugin in `packages/web/src/api/auth.ts`. This registers all Autumn endpoints under `/api/auth/autumn/*` as POST routes. No separate Hono handler needed.
+Add `autumn()` plugin and `databaseHooks` to auto-create the Autumn customer on sign-up in `packages/web/src/api/auth.ts`. This registers all Autumn endpoints under `/api/auth/autumn/*` as POST routes. No separate Hono handler needed.
 
 ```ts
 import { autumn } from "autumn-js/better-auth";
+import { Autumn } from "autumn-js";
+
+const autumnSdk = new Autumn();
 
 export const auth = betterAuth({
   // ...existing config
   plugins: [autumn()],
+  databaseHooks: {
+    user: {
+      create: {
+        async after(user) {
+          try {
+            await autumnSdk.customers.getOrCreate({
+              customerId: user.id,
+              name: user.name,
+              email: user.email,
+            });
+          } catch (e) {
+            console.error("[autumn] Failed to create customer on sign-up:", e);
+          }
+        },
+      },
+    },
+  },
 });
 ```
 
@@ -119,9 +139,9 @@ export default function RootLayout() {
 
 ## 6. Frontend Usage
 
-`useListPlans` returns `Plan[]` directly. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]` (each has `display.primaryText`), and `customerEligibility` (`{ attachAction, status }`). Use `customerEligibility.status === "active"` to detect the current plan and `attachAction` (`"upgrade"`, `"downgrade"`, `"none"`) for button labels.
+`useListPlans` returns `Plan[]` directly. Each plan has `id`, `name`, `price` (`{ amount, interval }` or null), `items[]` (each has `display.primaryText`), and `customerEligibility` (`{ attachAction, status }`). Use `customerEligibility.status === "active"` to detect the current plan and `attachAction` (`"upgrade"`, `"downgrade"`, `"none"`) for button labels. **Note:** `customerEligibility` is only populated after the customer exists — render `useCustomer` before relying on eligibility data from `useListPlans`.
 
-`useCustomer` returns `{ data: Customer, attach, isPending, ... }`. Customer has `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`). Customer is auto-created on first `getOrCreateCustomer` call — free plan with `autoEnable: true` is applied automatically.
+`useCustomer` returns `{ data: Customer, attach, isPending, ... }`. Customer has `subscriptions[]` (each has `planId`, `status`), `balances` (keyed by feature ID, each has `granted`, `remaining`, `usage`, `unlimited`). With the `databaseHooks` setup above, the customer is auto-created on sign-up with the free plan applied automatically (`autoEnable: true`).
 
 `attach` takes `{ planId, successUrl? }` — redirects to Stripe checkout for paid plans, applies immediately for free and invalidates queries. Price `amount` is in **cents** — divide by 100 for display (e.g. `amount: 2000` = $20).
 

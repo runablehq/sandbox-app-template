@@ -10,6 +10,8 @@ const root = path.resolve(__dirname, "../..");
 
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, root, '');
+	const port = appConfig.services.website.port;
+	if (!env.BETTER_AUTH_URL) env.BETTER_AUTH_URL = `http://localhost:${port}`;
 	Object.assign(process.env, env);
 
 	return {

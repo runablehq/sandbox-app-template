@@ -1,24 +1,16 @@
-import { useState, useEffect } from "react";
-import { api, type HealthResponse } from "../lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
 import { useDesktop } from "../hooks/use-desktop";
 
 function Index() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState(false);
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: async () => {
+      const res = await api.health.$get();
+      return res.json();
+    },
+  });
   const desktop = useDesktop();
-
-  useEffect(() => {
-    async function fetchHealth() {
-      try {
-        const res = await api.health.$get();
-        const data = await res.json();
-        setHealth(data);
-      } catch {
-        setError(true);
-      }
-    }
-    fetchHealth();
-  }, []);
 
   return (
     <div>
@@ -26,7 +18,11 @@ function Index() {
       <p>Platform: {desktop ? `Desktop (${desktop.platform})` : "Web"}</p>
       <p>
         API Status:{" "}
-        {error ? "Error" : health ? health.status : "Loading..."}
+        {health.isLoading
+          ? "Loading..."
+          : health.isError
+            ? "Error"
+            : health.data?.status}
       </p>
     </div>
   );

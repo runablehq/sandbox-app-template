@@ -1,4 +1,4 @@
-import { createReactQueryClient } from "@softnetics/hono-react-query";
+import { hc } from "hono/client";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { AppType } from "@template/web";
@@ -14,4 +14,6 @@ const baseUrl =
     default: `http://localhost:${port}`,
   });
 
-export const api = createReactQueryClient<AppType>({ baseUrl });
+const client = hc<AppType>(baseUrl!);
+
+export const api = client.api;

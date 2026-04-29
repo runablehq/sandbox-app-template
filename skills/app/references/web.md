@@ -2,7 +2,7 @@
 
 ## Overview
 
-The web frontend lives in `packages/web/src/web/` and is served by Vite in development. The API runs in the same process via a Vite plugin. Uses React, Wouter for routing, and typed API calls via `@softnetics/hono-react-query`.
+The web frontend lives in `packages/web/src/web/` and is served by Vite in development. The API runs in the same process via a Vite plugin. Uses React, Wouter for routing, `hono/client` for typed API calls, and `@tanstack/react-query` for queries and mutations.
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
@@ -71,15 +71,22 @@ function App() {
 ```tsx
 // src/web/pages/user.tsx
 import { useParams } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
-  const user = api.useQuery("api/users/:id", "$get", { param: { id } });
+  const user = useQuery({
+    queryKey: ["user", id],
+    queryFn: async () => {
+      const res = await api.users[":id"].$get({ param: { id } });
+      return res.json();
+    },
+  });
 
   if (user.isLoading) return <div>Loading...</div>;
 
-  return <h1>{(user.data as any)?.data?.name}</h1>;
+  return <h1>{user.data?.name}</h1>;
 }
 
 // In app.tsx:
@@ -113,47 +120,71 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 ## Typed API Client
 
-The API client uses a base URL without `/api` since Hono's `.basePath('api')` includes it in route type paths:
+Uses `hono/client` for typed calls and `@tanstack/react-query` for state management:
 
 ```ts
 // src/web/lib/api.ts
-import { createReactQueryClient } from "@softnetics/hono-react-query";
+import { hc } from "hono/client";
 import type { AppType } from "../../api";
 
-export const api = createReactQueryClient<AppType>({
-  baseUrl: "",
-});
+const client = hc<AppType>("/");
+export const api = client.api;
 ```
 
 ### Queries
 
 ```tsx
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
-// GET request — typed input, typed response
-const users = api.useQuery("api/users", "$get", {});
+const users = useQuery({
+  queryKey: ["users"],
+  queryFn: async () => (await api.users.$get()).json(),
+});
 
 // With parameters
-const user = api.useQuery("api/users/:id", "$get", { param: { id: "1" } });
+const user = useQuery({
+  queryKey: ["user", id],
+  queryFn: async () => (await api.users[":id"].$get({ param: { id } })).json(),
+});
 ```
 
 ### Mutations
 
 ```tsx
-const createUser = api.useMutation("api/users", "$post");
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-createUser.mutate({ json: { name: "Alice", email: "alice@example.com" } });
+const queryClient = useQueryClient();
+const createUser = useMutation({
+  mutationFn: async (data: { name: string; email: string }) => {
+    const res = await api.users.$post({ json: data });
+    return res.json();
+  },
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: ["users"] }),
+});
+
+createUser.mutate({ name: "Alice", email: "alice@example.com" });
 ```
 
-### Query invalidation
+### Optimistic updates
+
+For predictable mutations (deletes, toggles, status changes) — update UI instantly, revert on error.
 
 ```tsx
-const invalidateUsers = api.useInvalidateQueries("api/users", "$get");
-
-// After a mutation succeeds
-createUser.mutate(data, {
-  onSuccess: () => invalidateUsers(),
+const queryClient = useQueryClient();
+const deleteTodo = useMutation({
+  mutationFn: async (id: string) => {
+    await api.todos[":id"].$delete({ param: { id } });
+  },
+  onMutate: async (id) => {
+    const prev = queryClient.getQueryData(["todos"]);
+    queryClient.setQueryData(["todos"], (old: any) =>
+      old?.filter((t: any) => t.id !== id)
+    );
+    return { prev };
+  },
+  onError: (_err, _id, context) => {
+    queryClient.setQueryData(["todos"], context?.prev);
+  },
 });
 ```
-
-**Note:** Route paths in the typed client include the `api/` prefix (e.g., `"api/health"`, `"api/users"`) because Hono's `.basePath('api')` bakes it into the type.
