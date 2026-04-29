@@ -12,7 +12,7 @@ Monorepo: Bun workspaces + Turborepo.
 - **Web:** Vite 7 dev server — serves both the React frontend (`/*`) and the Hono API (`/api/*` via `vite/plugins/hono-dev-plugin.ts`) from a single port in `packages/web`
 - **API:** Hono with `.basePath('api')`, Drizzle ORM + Turso (SQLite) — source in `packages/web/src/api/`
 - **Web Frontend:** React 19 + Wouter + Tailwind CSS 4, bundled by Vite — source in `packages/web/src/web/`
-- **Mobile:** Expo + React Native + expo-router — API URL configured via `extra.apiUrl` in `app.json`, with fallback to `EXPO_PUBLIC_API_URL` env var and platform-specific localhost defaults
+- **Mobile:** Expo + React Native + expo-router — API URL configured via `extra.apiUrl` in `app.json` (must match `app.config.json` port)
 - **Desktop:** Electron shell + Vite (loads the web app from the server, exposes native APIs via IPC) — Vite/Electron ports come from `app.config.json`
 
 ## App Config
@@ -29,6 +29,17 @@ Typed end-to-end: `packages/web` exports `AppType` from `src/api/index.ts`, all 
 
 Do not start implementation until the user approves or adjusts the plan.
 
+## Design Guidelines
+
+Document design direction in `design.md` inside the website project directory before writing UI code. Reference it throughout for consistency.
+
+- **Typography**: distinctive, characterful fonts — never Inter, Roboto, Arial, system fonts. Pair display + body. Hierarchy through size/weight. Generous line height.
+- **Color**: dominant color with sharp accents. CSS variables + Tailwind. Accents for emphasis, not decoration.
+- **Layout**: asymmetric, overlapping, grid-breaking. Generous negative space or controlled density — intentionally.
+- **Backgrounds**: gradient meshes, noise textures, geometric patterns, layered transparencies. Match the aesthetic.
+- **Motion**: one well-orchestrated page load with staggered reveals > scattered micro-interactions. CSS-only for HTML, Motion library for React.
+- **Anti-patterns** (will look bad): purple gradients on white, predictable card grids with rounded corners, cookie-cutter layouts, overused fonts (Inter, Space Grotesk, Roboto).
+
 ## Workflow
 
 1. Run preflight.
@@ -44,7 +55,9 @@ Do not start implementation until the user approves or adjusts the plan.
 - **Typed client paths include `api/`** (e.g., `"api/health"`). `baseUrl` is just the origin — no `/api`.
 - **Desktop loads the web app** — no separate renderer. Gate desktop UI with `useDesktop()` / `window.electronAPI`. Only create a separate renderer if explicitly asked.
 - **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`.
-- **Mobile API URL** comes from `extra.apiUrl` in `app.json`, with fallback to `EXPO_PUBLIC_API_URL` and localhost defaults.
+- **Mobile API URL** comes from `extra.apiUrl` in `app.json`. Always set this port to match `app.config.json`.
+- **Never hardcode ports** — always read from `app.config.json`. Import it as `import appConfig from "../../app.config.json"` and use `appConfig.services.website.port`.
+- **Before starting a dev server**, kill any process already running on that port: `lsof -ti:<port> | xargs kill -9 2>/dev/null`.
 
 ### Dev Commands
 

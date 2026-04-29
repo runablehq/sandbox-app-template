@@ -2,7 +2,7 @@
 
 ## Overview
 
-`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via `extra.apiUrl` in `app.json`.
+`packages/mobile` is an Expo + React Native app with expo-router (file-based routing) and typed API calls via `@softnetics/hono-react-query`. The API URL is configured via `extra.apiUrl` in `app.json`. When the port in `app.config.json` changes, update `packages/mobile/app.json` → `expo.extra.apiUrl` to match.
 
 ## Project Structure
 
@@ -18,7 +18,7 @@ packages/mobile/
   lib/
     api.ts                   Typed API client
   assets/                    App icons, splash screen
-  app.json                   Expo config
+  app.json                   Expo config (extra.apiUrl must match app.config.json port)
   eas.json                   EAS build profiles with env vars
   env.d.ts                   Type declarations for process.env
   web/
@@ -112,12 +112,15 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { AppType } from "@template/web";
 
+const { services } = require("../../app.config.json") as { services: { website: { port: number } } };
+const port = services.website.port;
+
 const baseUrl =
   Constants.expoConfig?.extra?.apiUrl ??
   process.env.EXPO_PUBLIC_API_URL ??
   Platform.select({
-    android: "http://10.0.2.2:3000",
-    default: "http://localhost:3000",
+    android: `http://10.0.2.2:${port}`,
+    default: `http://localhost:${port}`,
   });
 
 export const api = createReactQueryClient<AppType>({ baseUrl });

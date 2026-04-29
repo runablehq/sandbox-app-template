@@ -33,10 +33,13 @@ Create `packages/web/src/api/auth.ts`.
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./database";
+import appConfig from "../../../app.config.json";
+
+const port = appConfig.services.website.port;
 
 export const auth = betterAuth({
   basePath: "/api/auth",
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+  baseURL: process.env.BETTER_AUTH_URL ?? `http://localhost:${port}`,
   database: drizzleAdapter(db, { provider: "sqlite" }),
   emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
@@ -132,12 +135,15 @@ import { createAuthClient } from "better-auth/react";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
+const { services } = require("../../app.config.json") as { services: { website: { port: number } } };
+const port = services.website.port;
+
 const baseURL =
   Constants.expoConfig?.extra?.apiUrl ??
   process.env.EXPO_PUBLIC_API_URL ??
   Platform.select({
-    android: "http://10.0.2.2:3000",
-    default: "http://localhost:3000",
+    android: `http://10.0.2.2:${port}`,
+    default: `http://localhost:${port}`,
   });
 
 export const authClient = createAuthClient({

@@ -60,7 +60,7 @@ The desktop app has no separate renderer by default. It loads the web app from `
 ## Dev Commands
 
 ```sh
-bun run dev            # start the web service (API + frontend) on port 3000
+bun run dev            # start the web service (API + frontend) on the port from app.config.json
 bun run dev:desktop    # start the desktop app (requires server running)
 bun run dev:mobile     # start the Expo dev server
 ```

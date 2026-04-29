@@ -176,13 +176,16 @@ import { DefaultChatTransport } from "ai";
 import Constants from "expo-constants";
 import { useState } from "react";
 
+const { services } = require("../../app.config.json") as { services: { website: { port: number } } };
+const port = services.website.port;
+
 export default function ChatScreen() {
   const baseUrl =
     Constants.expoConfig?.extra?.apiUrl ??
     process.env.EXPO_PUBLIC_API_URL ??
     Platform.select({
-      android: "http://10.0.2.2:3000",
-      default: "http://localhost:3000",
+      android: `http://10.0.2.2:${port}`,
+      default: `http://localhost:${port}`,
     });
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: `${baseUrl}/api/agent/messages` }),
