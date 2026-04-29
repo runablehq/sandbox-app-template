@@ -9,6 +9,7 @@ This is the **single UI codebase** — it also runs inside the desktop Electron 
 ## Key Rules
 
 - **Always show a loading state for every API call** — check `isLoading` and render a loader/skeleton before rendering data. For action buttons (submit, save, delete, etc.), show a loading indicator and disable the button while the mutation is pending.
+- **Wouter `<Link>` renders an `<a>` tag** — never put an `<a>` inside a `<Link>`. Use `<Link to="/path"><span>...</span></Link>` or `<Link to="/path" className="...">text</Link>` instead.
 
 ## Project Structure
 

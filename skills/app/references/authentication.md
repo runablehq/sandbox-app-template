@@ -65,7 +65,7 @@ Then push: `bun run db:push`
 
 ## 4. Mount Auth in Hono
 
-Add auth routes to `src/api/index.ts` by chaining `.all()`:
+Auth must be mounted **before** `.basePath()` so Better Auth receives the full `/api/auth/*` path. Use `.on()` with single `*` wildcard (Hono v4 uses `*` not `**`):
 
 ```ts
 import { Hono } from "hono";
@@ -73,9 +73,9 @@ import { cors } from "hono/cors";
 import { auth } from "./auth";
 
 const app = new Hono()
-  .basePath("api")
   .use(cors({ origin: "*" }))
-  .all("/auth/**", (c) => auth.handler(c.req.raw))
+  .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
+  .basePath("api")
   .get("/health", (c) => c.json({ status: "ok" }, 200));
 
 export type AppType = typeof app;
