@@ -106,6 +106,20 @@ export default function TabLayout() {
 }
 ```
 
+## API URL Setup
+
+The API URL is read from `app.json` → `expo.extra.apiUrl`. Always set this to match the port in `app.config.json`:
+
+```json
+{
+  "expo": {
+    "extra": {
+      "apiUrl": "http://localhost:<port from app.config.json>"
+    }
+  }
+}
+```
+
 ## Typed API Client
 
 Uses `hono/client` for typed calls and `@tanstack/react-query` for state management:
@@ -114,19 +128,11 @@ Uses `hono/client` for typed calls and `@tanstack/react-query` for state managem
 // lib/api.ts
 import { hc } from "hono/client";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
 import type { AppType } from "@template/web";
-
-const { services } = require("../../app.config.json") as { services: { website: { port: number } } };
-const port = services.website.port;
 
 const baseUrl =
   Constants.expoConfig?.extra?.apiUrl ??
-  process.env.EXPO_PUBLIC_API_URL ??
-  Platform.select({
-    android: `http://10.0.2.2:${port}`,
-    default: `http://localhost:${port}`,
-  });
+  process.env.EXPO_PUBLIC_API_URL;
 
 const client = hc<AppType>(baseUrl!);
 export const api = client.api;

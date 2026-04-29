@@ -132,18 +132,10 @@ Create `packages/mobile/lib/auth.ts`:
 ```ts
 import { createAuthClient } from "better-auth/react";
 import Constants from "expo-constants";
-import { Platform } from "react-native";
-
-const { services } = require("../../app.config.json") as { services: { website: { port: number } } };
-const port = services.website.port;
 
 const baseURL =
   Constants.expoConfig?.extra?.apiUrl ??
-  process.env.EXPO_PUBLIC_API_URL ??
-  Platform.select({
-    android: `http://10.0.2.2:${port}`,
-    default: `http://localhost:${port}`,
-  });
+  process.env.EXPO_PUBLIC_API_URL;
 
 export const authClient = createAuthClient({
   baseURL,
