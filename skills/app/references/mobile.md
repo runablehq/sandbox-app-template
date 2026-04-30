@@ -4,6 +4,8 @@
 
 `packages/mobile` is an Expo + React Native app with expo-router (file-based routing), `hono/client` for typed API calls, and `@tanstack/react-query` for queries and mutations. The API URL is configured via `extra.apiUrl` in `app.json`. When the port in `app.config.json` changes, update `packages/mobile/app.json` → `expo.extra.apiUrl` to match.
 
+When creating an app, update `app.json` → `expo.name` and `expo.slug` to the app's name (e.g. `"name": "My App"`, `"slug": "my-app"`).
+
 ## Project Structure
 
 ```
