@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start --port $(bun -e \"console.log(require('../../app.config.json').services.mobile.port)\")",
-    "start": "expo start --port $(bun -e \"console.log(require('../../app.config.json').services.mobile.port)\")",
-    "android": "expo start --android --port $(bun -e \"console.log(require('../../app.config.json').services.mobile.port)\")",
-    "ios": "expo start --ios --port $(bun -e \"console.log(require('../../app.config.json').services.mobile.port)\")",
-    "web": "expo start --web --port $(bun -e \"console.log(require('../../app.config.json').services.mobile.port)\")",
+    "dev": "expo start",
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -110,13 +110,29 @@ export default function TabLayout() {
 
 ## API URL Setup
 
-The API URL is read from `app.json` → `expo.extra.apiUrl`. Always set this to match the port in `app.config.json`:
+**Required during app creation:**
+
+1. Update `packages/mobile/package.json` — add `--port <mobile port from app.config.json>` to all scripts:
+
+```json
+{
+  "scripts": {
+    "dev": "expo start --port <services.mobile.port>",
+    "start": "expo start --port <services.mobile.port>",
+    "android": "expo start --android --port <services.mobile.port>",
+    "ios": "expo start --ios --port <services.mobile.port>",
+    "web": "expo start --web --port <services.mobile.port>"
+  }
+}
+```
+
+2. Set `app.json` → `expo.extra.apiUrl` to the **website** port from `app.config.json`:
 
 ```json
 {
   "expo": {
     "extra": {
-      "apiUrl": "http://localhost:<port from app.config.json>"
+      "apiUrl": "http://localhost:<services.website.port>"
     }
   }
 }
