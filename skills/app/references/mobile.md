@@ -10,6 +10,10 @@ When creating an app, update `app.json` → `expo.name` and `expo.slug` to the a
 
 Start mobile from root: `bun run dev:mobile`. For a custom port: `bun run dev:mobile --port <port>`.
 
+### Icons
+
+Use `@expo/vector-icons` (bundled with Expo) for icons. For a premium look, use `phosphor-react-native` which offers duotone and multiple weight variants. Prefer icons over emojis.
+
 ## Project Structure
 
 ```

@@ -10,6 +10,10 @@ This is the **single UI codebase** — it also runs inside the desktop Electron 
 
 Start web from root: `bun run dev`. For a custom port: `bun run dev --port <port>`.
 
+### Icons
+
+Use `lucide-react` for icons. For animated micro-interactions, use `lucide-animated`. Prefer icons over emojis.
+
 ## Key Rules
 
 - **Always show a loading state for every API call** — check `isLoading` and render a loader/skeleton before rendering data. For action buttons (submit, save, delete, etc.), show a loading indicator and disable the button while the mutation is pending.
