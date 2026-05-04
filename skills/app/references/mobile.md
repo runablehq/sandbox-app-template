@@ -6,6 +6,10 @@
 
 When creating an app, update `app.json` → `expo.name` and `expo.slug` to the app's name (e.g. `"name": "My App"`, `"slug": "my-app"`).
 
+### Dev Server
+
+Start mobile from root: `bun run dev:mobile`. For a custom port: `bun run dev:mobile --port <port>`.
+
 ## Project Structure
 
 ```

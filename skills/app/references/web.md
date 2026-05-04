@@ -6,6 +6,10 @@ The web frontend lives in `packages/web/src/web/` and is served by Vite in devel
 
 This is the **single UI codebase** — it also runs inside the desktop Electron shell.
 
+### Dev Server
+
+Start web from root: `bun run dev`. For a custom port: `bun run dev --port <port>`.
+
 ## Key Rules
 
 - **Always show a loading state for every API call** — check `isLoading` and render a loader/skeleton before rendering data. For action buttons (submit, save, delete, etc.), show a loading indicator and disable the button while the mutation is pending.
