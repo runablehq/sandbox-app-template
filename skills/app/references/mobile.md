@@ -53,7 +53,7 @@ Wrap screen content in `KeyboardAvoidingView` with these props:
 <KeyboardAvoidingView
   style={{ flex: 1 }}
   behavior={Platform.OS === "ios" ? "padding" : "height"}
-  keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0} // 88 with tab bar, 0 without
+  keyboardVerticalOffset={0}
 >
 ```
 
