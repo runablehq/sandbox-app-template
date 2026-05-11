@@ -41,8 +41,23 @@ packages/mobile/
 
 ## Key Rules
 
-- Always wrap screen content in `SafeAreaView` from `react-native-safe-area-context` to avoid notch/status bar/home indicator overlap.
+- **Every screen must be wrapped in `SafeAreaView`** from `react-native-safe-area-context` with `edges={["top", "left", "right"]}` (skip `"bottom"` when inside a tab navigator since the tab bar provides bottom inset). This prevents content from being hidden behind the notch, status bar, and home indicator.
 - **Use optimistic updates for instant-feel interactions** — for likes, comments, bookmarks, toggles, etc. See [Optimistic updates](#optimistic-updates) section for the pattern.
+- **Keyboard handling** — Screens with inputs must use `KeyboardAvoidingView` so content isn't hidden behind the keyboard. See [Keyboard Avoidance](#keyboard-avoidance) below.
+
+## Keyboard Avoidance
+
+Wrap screen content in `KeyboardAvoidingView` with these props:
+
+```tsx
+<KeyboardAvoidingView
+  style={{ flex: 1 }}
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0} // 88 with tab bar, 0 without
+>
+```
+
+Place your `ScrollView` or `FlatList` inside it with `keyboardShouldPersistTaps="handled"`. Inputs must always remain visible above the keyboard — never let them sit behind it.
 
 ## Adding Screens
 
