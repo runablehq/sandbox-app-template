@@ -7,12 +7,34 @@ We use [Better Auth](https://www.better-auth.com) for authentication.
 Reference docs: [llms.txt](https://www.better-auth.com/llms.txt)
 
 <preflight>
-Before wiring, state your assumptions about which auth methods are needed (email/password, OAuth, magic link), which routes/screens should be protected, where users land after sign-in, and whether sign-in/sign-up are separate pages or a single page with tabs. The user will correct what's wrong.
+Before wiring, state which auth methods are needed, which routes/screens should be protected, where users land after sign-in, and which provider buttons should be visible. If the user asks for Google/Apple auth, default to Runable managed auth so they do not need provider credentials.
 </preflight>
 
 <design_thinking>
-Auth pages are the first impression for returning users — match the app's visual language, don't ship barebones forms. Error states matter as much as the happy path. Loading and redirect transitions should feel instant.
+Auth pages are the first impression for returning users. Build a real app-native screen that matches the product UI. Do not show a generic Runable login button when the user asked for Google or Apple sign-in; show the provider labels the user expects.
 </design_thinking>
+
+## Default: Runable Managed Auth
+
+Generated apps should use Runable managed auth by default for OAuth providers. The app renders its own custom UI, owns its own Better Auth session, and uses Runable only as the managed OAuth broker.
+
+Generated apps use bearer tokens for application API calls. Do not rely on Better Auth's session cookies as the long-lived app auth mechanism. OAuth redirects may create a Better Auth session cookie as a browser handoff; immediately capture the session token after the callback and store it as the bearer token.
+
+Use these provider ids:
+
+```txt
+runable-google  -> user-facing "Continue with Google"
+runable-apple   -> user-facing "Continue with Apple"
+runable         -> user-facing "Continue with Runable" only when explicitly requested
+```
+
+The app must not ask the user for Google or Apple client credentials for this default flow. Runable provisions these env vars during app creation:
+
+```bash
+RUNABLE_AUTH_ISSUER=
+RUNABLE_AUTH_CLIENT_ID=
+RUNABLE_AUTH_CLIENT_SECRET=
+```
 
 ## 1. Install
 
@@ -30,35 +52,67 @@ Create `packages/web/src/api/auth.ts`.
 ```ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { bearer } from "better-auth/plugins";
+import { bearer, genericOAuth } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { db } from "./database";
+
+const runableIssuer = process.env.RUNABLE_AUTH_ISSUER;
+const runableClientId = process.env.RUNABLE_AUTH_CLIENT_ID;
+const runableClientSecret = process.env.RUNABLE_AUTH_CLIENT_SECRET;
+
+if (!runableIssuer || !runableClientId || !runableClientSecret) {
+  throw new Error("Missing Runable managed auth environment variables");
+}
+
+const runableOAuthUrl = (path: string) => new URL(path, `${runableIssuer}/`).toString();
+
+const createRunableProvider = (providerId: string, authorizationPath: string) => ({
+  providerId,
+  clientId: runableClientId,
+  clientSecret: runableClientSecret,
+  authorizationUrl: runableOAuthUrl(authorizationPath),
+  tokenUrl: runableOAuthUrl("oauth2/token"),
+  userInfoUrl: runableOAuthUrl("oauth2/userinfo"),
+  issuer: runableIssuer,
+  scopes: ["openid", "email", "profile"],
+  authentication: "basic" as const,
+  pkce: true,
+});
 
 export const auth = betterAuth({
   basePath: "/api/auth",
   baseURL: process.env.WEBSITE_URL,
   database: drizzleAdapter(db, { provider: "sqlite" }),
-  emailAndPassword: { enabled: true },
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: (request) => {
     const origin = request?.headers.get("origin");
     return origin ? [origin] : ["*"];
   },
-  plugins: [bearer(), expo()],
+  plugins: [
+    bearer(),
+    expo(),
+    genericOAuth({
+      config: [
+        createRunableProvider("runable-google", "managed/oauth/google/authorize"),
+        createRunableProvider("runable-apple", "managed/oauth/apple/authorize"),
+        createRunableProvider("runable", "oauth2/authorize"),
+      ],
+    }),
+  ],
 });
 ```
 
-`bearer()` — token-based auth for cross-origin iframes. `expo()` — CSRF handling for native mobile clients.
+`bearer()` is used for token-based auth in cross-origin previews. `expo()` handles native mobile CSRF behavior. `genericOAuth()` lets the app create its own session from Runable managed OAuth callbacks.
 
-`baseURL` is set from `WEBSITE_URL` env var. Required for OAuth callbacks and production. Do **not** import JSON config files in this file — the Better Auth CLI uses jiti which cannot resolve them.
+Use local email/password only when the user explicitly asks for app-owned email/password auth.
 
 ## 3. Generate Auth Schema
 
-The CLI uses jiti (not bun env loading). Pass env vars inline. Run generate BEFORE adding `export * from "./auth-schema"` to `schema.ts` — the CLI fails if the target file doesn't exist yet.
+The CLI uses jiti, not Bun env loading. Pass env vars inline. Run generate before adding `export * from "./auth-schema"` to `schema.ts`.
 
 ```bash
 cd packages/web
-DATABASE_URL=$DATABASE_URL BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
+DATABASE_URL=$DATABASE_URL BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET RUNABLE_AUTH_ISSUER=$RUNABLE_AUTH_ISSUER RUNABLE_AUTH_CLIENT_ID=$RUNABLE_AUTH_CLIENT_ID RUNABLE_AUTH_CLIENT_SECRET=$RUNABLE_AUTH_CLIENT_SECRET bun x @better-auth/cli@latest generate --config=./src/api/auth.ts --output=./src/api/database/auth-schema.ts -y
 ```
 
 After the schema file is generated, re-export from `src/api/database/schema.ts`:
@@ -71,7 +125,7 @@ Then push: `bun run db:push`
 
 ## 4. Mount Auth in Hono
 
-Auth must be mounted **before** `.basePath()` so Better Auth receives the full `/api/auth/*` path. Use `.on()` with single `*` wildcard (Hono v4 uses `*` not `**`):
+Auth must be mounted before `.basePath()` so Better Auth receives the full `/api/auth/*` path. Use `.on()` with single `*` wildcard.
 
 ```ts
 import { Hono } from "hono";
@@ -88,7 +142,7 @@ export type AppType = typeof app;
 export default app;
 ```
 
-`exposeHeaders: ["set-auth-token"]` is required so the browser allows JavaScript to read the bearer token from the response header.
+`exposeHeaders: ["set-auth-token"]` is required so JavaScript can read the bearer token from direct auth responses.
 
 ## 5. Auth Middleware
 
@@ -117,6 +171,7 @@ Create `packages/web/src/web/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
+import { genericOAuthClient } from "better-auth/client/plugins";
 
 export const TOKEN_KEY = "bearer_token";
 
@@ -127,6 +182,7 @@ export function getToken(): string {
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
+  plugins: [genericOAuthClient()],
   fetchOptions: {
     auth: {
       type: "Bearer",
@@ -135,22 +191,28 @@ export const authClient = createAuthClient({
   },
 });
 
-/** Call in onSuccess of signIn/signUp to capture the bearer token */
 export function captureToken(ctx: { response: Response }) {
   const token = ctx.response.headers.get("set-auth-token");
   if (token) localStorage.setItem(TOKEN_KEY, token);
 }
 
-/** Clear stored token on sign-out */
+export async function captureTokenFromSessionCookie() {
+  const { data } = await authClient.getSession({
+    fetchOptions: { credentials: "include" },
+  });
+  const token = data?.session.token;
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  return Boolean(token);
+}
+
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 ```
 
-The Hono typed API client (`hc`) does NOT use the authClient's fetch — it needs its own bearer token headers:
+The Hono typed API client (`hc`) needs its own bearer token headers:
 
 ```ts
-// packages/web/src/web/lib/api.ts
 import { hc } from "hono/client";
 import type { AppType } from "../../api";
 import { getToken } from "./auth";
@@ -164,24 +226,61 @@ const client = hc<AppType>("/", {
 export const api = client.api;
 ```
 
-Usage:
+Use provider-labeled buttons in custom UI:
 
 ```tsx
-await authClient.signUp.email({ name, email, password }, { onSuccess: captureToken });
-await authClient.signIn.email({ email, password }, { onSuccess: captureToken });
-await authClient.signOut();
-clearToken();
-const { data: session, isPending } = authClient.useSession();
+await authClient.signIn.oauth2({
+  providerId: "runable-google",
+  callbackURL: "/auth/callback?to=/dashboard",
+});
+
+await authClient.signIn.oauth2({
+  providerId: "runable-apple",
+  callbackURL: "/auth/callback?to=/dashboard",
+});
+```
+
+Only render `Continue with Runable` when the user explicitly asks for Runable account sign-in:
+
+```tsx
+await authClient.signIn.oauth2({
+  providerId: "runable",
+  callbackURL: "/auth/callback?to=/dashboard",
+});
+```
+
+Redirect-based OAuth does not expose the final callback response headers to the button click handler. Add an auth callback page that exchanges the temporary Better Auth cookie for the bearer token:
+
+```tsx
+import { useEffect } from "react";
+import { useLocation } from "wouter";
+import { captureTokenFromSessionCookie } from "../lib/auth";
+
+export function AuthCallbackPage() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const nextPath = params.get("to") || "/";
+
+    void captureTokenFromSessionCookie().then((captured) => {
+      navigate(captured ? nextPath : "/sign-in");
+    });
+  }, [navigate]);
+
+  return <div>Signing you in...</div>;
+}
 ```
 
 ## 7. Mobile Auth Client
 
-Create `packages/mobile/lib/auth.ts`:
+Create `packages/mobile/lib/auth.ts`.
 
-Mobile must work in both Expo Go (native) and Expo Web. Uses `expo-secure-store` on native (encrypted), falls back to `localStorage` on web via try/catch. Platform-specific fetch options handle CORS and CSRF differences.
+Mobile can share the same Runable provider ids, but native OAuth requires a registered callback/deep link for the mobile app. Use web/desktop managed auth first unless the user explicitly asks for mobile login.
 
 ```ts
 import { createAuthClient } from "better-auth/react";
+import { genericOAuthClient } from "better-auth/client/plugins";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";
@@ -189,9 +288,7 @@ import Constants from "expo-constants";
 const isWeb = Platform.OS === "web";
 const TOKEN_KEY = "bearer_token";
 
-const baseURL =
-  Constants.expoConfig?.extra?.apiUrl ??
-  process.env.EXPO_PUBLIC_API_URL;
+const baseURL = Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
 
 export function getToken(): string {
   try {
@@ -220,6 +317,7 @@ async function removeToken() {
 export const authClient = createAuthClient({
   baseURL,
   basePath: "/api/auth",
+  plugins: [genericOAuthClient()],
   fetchOptions: {
     ...(isWeb ? { credentials: "omit" as const } : {}),
     auth: {
@@ -230,45 +328,21 @@ export const authClient = createAuthClient({
   },
 });
 
-/** Call in onSuccess of signIn/signUp to capture the bearer token */
 export function captureToken(ctx: { response: Response }) {
   const token = ctx.response.headers.get("set-auth-token");
   if (token) setToken(token);
 }
 
-/** Clear stored token on sign-out */
 export async function clearToken() {
   await removeToken();
 }
 ```
 
-Platform differences:
-- **Native (Expo Go)**: cookies work normally, `expo-origin` header passes CSRF check, SecureStore for token storage
-- **Web (Expo Web)**: `credentials: "omit"` skips cookies to avoid CORS preflight issues, `localStorage` for token storage
-
-```ts
-// packages/mobile/lib/api.ts
-import { hc } from "hono/client";
-import Constants from "expo-constants";
-import type { AppType } from "@template/web";
-import { getToken } from "./auth";
-
-const baseUrl = Constants.expoConfig?.extra?.apiUrl ?? process.env.EXPO_PUBLIC_API_URL;
-const client = hc<AppType>(baseUrl!, {
-  headers: () => {
-    const token = getToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  },
-});
-export const api = client.api;
-```
-
 ## 8. Protected Routes
 
-### Web (Wouter)
+### Web
 
 ```tsx
-// src/web/components/protected-route.tsx
 import { Redirect } from "wouter";
 import { authClient } from "../lib/auth";
 
@@ -280,16 +354,9 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-
-// In app.tsx:
-<Route path="/dashboard">
-  <ProtectedRoute>
-    <DashboardPage />
-  </ProtectedRoute>
-</Route>
 ```
 
-### Mobile (Expo Router)
+### Mobile
 
 ```tsx
 export default function RootLayout() {
