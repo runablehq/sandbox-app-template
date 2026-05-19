@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "sandbox-app-template-web",
+      name: "web-app",
       cwd: "./packages/web",
       script: "src/server.ts",
       interpreter: "bun",
