@@ -9,6 +9,9 @@ module.exports = {
       instances: 1,
       autorestart: true,
       restart_delay: 1000,
+      env: {
+        PORT: process.env.PORT || 4200,
+      },
     },
   ],
 };
