@@ -21,22 +21,13 @@ Use `@expo/vector-icons` (bundled with Expo) for icons. For a premium look, use 
 
 ```
 packages/mobile/
-  app/
-    _layout.tsx              Root layout (QueryClientProvider + SafeAreaProvider)
-    index.tsx                / screen
-    profile.tsx              /profile screen
-    users/
-      index.tsx              /users screen
-      [id].tsx               /users/:id screen
-  lib/
-    api.ts                   Typed API client
+  app/                       Expo Router screens & layouts
+  components/                Shared components (ErrorBoundary, etc.)
+  lib/                       Utilities (typed API client, etc.)
   assets/                    App icons, splash screen
   app.json                   Expo config
   eas.json                   EAS build profiles with env vars
   env.d.ts                   Type declarations for process.env
-  web/
-    src/
-      api/                   For all the api endpoints/database
 ```
 
 ## Key Rules
@@ -44,6 +35,7 @@ packages/mobile/
 - **Every screen must be wrapped in `SafeAreaView`** from `react-native-safe-area-context` with `edges={["top", "left", "right"]}` (skip `"bottom"` when inside a tab navigator since the tab bar provides bottom inset). This prevents content from being hidden behind the notch, status bar, and home indicator.
 - **Use optimistic updates for instant-feel interactions** — for likes, comments, bookmarks, toggles, etc. See [Optimistic updates](#optimistic-updates) section for the pattern.
 - **Keyboard handling** — Screens with inputs must use `KeyboardAvoidingView` so content isn't hidden behind the keyboard. See [Keyboard Avoidance](#keyboard-avoidance) below.
+- **Error boundary** — `components/ErrorBoundary.tsx` wraps the app in `_layout.tsx`. On web it shows a dark error screen with collapsible stack traces and a copy button. On native it falls through to Expo Go's default error overlay.
 
 ## Keyboard Avoidance
 
