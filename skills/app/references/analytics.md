@@ -1,8 +1,12 @@
 # Analytics
 
-We use [Runable Analytics](https://onedollarstats.com) for privacy-friendly website analytics.
+Privacy-friendly analytics via [Runable Analytics](https://onedollarstats.com).
 
-## Create Analytics Hook
+Hostnames: `{APPLICATION_ID}-website` (web) / `{APPLICATION_ID}-mobile` (mobile).
+
+## Web
+
+Vite plugin injects `runable.js` → exposes `window.stonks` with `event()` and `view()`.
 
 Create `src/web/hooks/use-analytics.ts`:
 
@@ -17,18 +21,31 @@ export const useAnalytics = () => ({
 });
 ```
 
-## Use In Components
+## Mobile
+
+Provider is already set up in `app/_layout.tsx` — do not duplicate it. Import `useAnalytics` from `../lib/analytics`.
+
+### Usage
 
 ```tsx
-import { useAnalytics } from "../hooks/use-analytics";
+import { useEffect } from "react";
+import { useAnalytics } from "../lib/analytics";
 
-function PricingPage() {
-  const { trackEvent } = useAnalytics();
+export default function SomeScreen() {
+  const { event, view } = useAnalytics();
 
-  const handlePlanSelect = (plan: string) => {
-    trackEvent("plan_selected", { plan });
+  useEffect(() => {
+    view("/some-screen");
+  }, []);
+
+  const handleTap = () => {
+    event("button_tap", { label: "signup" });
   };
-
-  return <button onClick={() => handlePlanSelect("pro")}>Select Pro</button>;
 }
 ```
+
+### Rules
+
+- Call `view("/route")` in `useEffect(, [])` on every screen for page views.
+- Call `event("name", { props })` on interactive elements (buttons, switches, forms).
+- Use `snake_case` for event names. Include relevant context as props.
