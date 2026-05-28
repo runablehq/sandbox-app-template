@@ -6,7 +6,7 @@ Hostnames: `{APPLICATION_ID}-website` (web) / `{APPLICATION_ID}-mobile` (mobile)
 
 ## Web
 
-Vite plugin injects `runable.js` → exposes `window.stonks` with `event()` and `view()`.
+Vite plugin (`vite/plugins/runable-analytics-plugin.ts`) reads `APPLICATION_ID` from env, builds hostname as `{APPLICATION_ID}-website`, and injects `runable.js` into HTML. Exposes `window.stonks` with `event()` and `view()`.
 
 Create `src/web/hooks/use-analytics.ts`:
 

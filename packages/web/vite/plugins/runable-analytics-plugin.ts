@@ -10,8 +10,10 @@ export default function runableAnalyticsPlugin(): Plugin {
 			const doc = dom.window.document;
 			const head = doc.head;
 
-			const websiteUrl = process.env.WEBSITE_URL ?? "";
-			const hostname = websiteUrl ? new URL(websiteUrl).hostname : "";
+			const applicationId = process.env.APPLICATION_ID ?? "";
+			const hostname = applicationId
+				? `${applicationId}-website`
+				: "localhost";
 
 			// Runable script
 			const script = doc.createElement("script");
@@ -19,7 +21,7 @@ export default function runableAnalyticsPlugin(): Plugin {
 			script.src = "./runable.js";
 			script.dataset.hostname = hostname;
 			script.dataset.url = "https://r.lilstts.com/events";
-			if (hostname === "localhost") script.dataset.devmode = "true";
+			script.dataset.debug = hostname === "localhost" ? "true" : "false";
 			head.appendChild(script);
 
 			return dom.serialize();
