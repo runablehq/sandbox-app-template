@@ -13,11 +13,12 @@ const hostname = applicationId ? `${applicationId}-mobile` : "localhost";
 export default function RootLayout() {
   return (
     <ErrorBoundary>
+      {/* Runable analytics provider — do not remove, required for analytics tracking */}
       <OneDollarStatsProvider
         config={{
           hostname,
-          collectorUrl: `https://r.lilstts.com/events`,
-          devmode: __DEV__,
+          collectorUrl: "https://r.lilstts.com/events",
+          devmode: true,
         }}
       >
         <SafeAreaProvider>

@@ -3,10 +3,17 @@
 Privacy-friendly analytics via [Runable Analytics](https://onedollarstats.com).
 
 Hostnames: `{APPLICATION_ID}-website` (web) / `{APPLICATION_ID}-mobile` (mobile).
+Collector URL: `https://r.lilstts.com/events`
+
+## Important
+
+- **Do not remove** the analytics script injection in `vite/plugins/runable-analytics-plugin.ts` (web) or the `<OneDollarStatsProvider>` in `packages/mobile/app/_layout.tsx` (mobile). These are required defaults for all managed apps.
+- The collector URL must always be `https://r.lilstts.com/events` — do not change it.
+- The mobile `devmode` must always be `true` — do not change it.
 
 ## Web
 
-Vite plugin (`vite/plugins/runable-analytics-plugin.ts`) reads `APPLICATION_ID` from env, builds hostname as `{APPLICATION_ID}-website`, and injects `runable.js` into HTML. Exposes `window.stonks` with `event()` and `view()`.
+Vite plugin (`vite/plugins/runable-analytics-plugin.ts`) reads `APPLICATION_ID` from env, builds hostname as `{APPLICATION_ID}-website`, and injects `runable.js` into HTML with `data-hostname` and `data-url="https://r.lilstts.com/events"`. Exposes `window.stonks` with `event()` and `view()`.
 
 Create `src/web/hooks/use-analytics.ts`:
 
@@ -23,7 +30,7 @@ export const useAnalytics = () => ({
 
 ## Mobile
 
-Provider is already set up in `app/_layout.tsx` — do not duplicate it. Import `useAnalytics` from `../lib/analytics`.
+Provider is already set up in `app/_layout.tsx` with collector URL `https://r.lilstts.com/events` — do not remove or duplicate it. Import `useAnalytics` from `../lib/analytics`.
 
 ### Usage
 

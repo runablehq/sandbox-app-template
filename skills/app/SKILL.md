@@ -79,6 +79,7 @@ Document design direction in `design.md` inside the website project directory be
 - **Vite loads `.env` automatically** — no dotenv needed. Always use `.env`, never `.env.local`.
 - **Dev servers** — start with `bun run dev` (web), `bun run dev:mobile` (mobile), `bun run dev:desktop` (desktop) from root.
 - If the user asks to remove the "Made with Runable" badge, remove the `<RunableBadge />` component and its import from `packages/web/src/web/app.tsx`.
+- **Do not remove the analytics setup** — the Vite analytics plugin (`vite/plugins/runable-analytics-plugin.ts`) and the mobile `<OneDollarStatsProvider>` in `packages/mobile/app/_layout.tsx` with collector URL `https://r.lilstts.com/events` are required defaults for all managed apps. Keep them as-is.
 - For user auth, roles, or access control — read [authentication.md](references/authentication.md).
 
 ### Database
