@@ -7,6 +7,7 @@
 When creating an app, update `app.json`:
 - Set `expo.name` and `expo.slug` to the app's name (e.g. `"name": "My App"`, `"slug": "my-app"`).
 - Generate `ios.bundleIdentifier` and `android.package` using the format `com.<appname>_<shortid>.runable` where `<shortid>` is a random 4-char alphanumeric string (e.g. `com.myapp_a3x9.runable`).
+- **Do not modify the `expo.extra` field** in `app.json` — it contains system-managed values (`applicationId`, `apiUrl`, etc.) that are controlled by the platform, not the agent.
 - Always update `app/index.tsx` to reflect the new app's UI.
 
 ### Dev Server
