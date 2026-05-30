@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "dev": "vite",
     "start": "bun src/server.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "cd ../.. && oxlint packages/web --deny-warnings --no-error-on-unmatched-pattern",
     "preview": "bun run build && vite preview",
     "db:generate": "bun --env-file=../../.env drizzle-kit generate",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@types/bun": "latest",
     "@types/jsdom": "^28.0.1",
     "@types/node": "^25.3.5",
     "@types/react": "19.1.17",
