@@ -106,7 +106,7 @@ Must Read a reference **only when implementing that feature**. Do not read all r
 | Payments, billing, subscriptions | [references/payments.md](references/payments.md) |
 | AI agent, chatbot, LLM | [references/ai-agent.md](references/ai-agent.md) |
 | Email | [references/email.md](references/email.md) |
-| File upload (R2 storage) | [references/file-upload.md](references/file-upload.md) |
+| File upload (tigris storage) | [references/file-upload.md](references/file-upload.md) |
 | Analytics (event tracking) | [references/analytics.md](references/analytics.md) |
 
 ## Testing

@@ -84,7 +84,7 @@ import { generateText } from "ai";
 
 ## Image Generation
 
-Use `google/gemini-3-pro-image` via `generateText`. Save all generated images to R2 (see [file-upload.md](file-upload.md)).
+Use `google/gemini-3-pro-image` via `generateText`. Save all generated images to tigris (see [file-upload.md](file-upload.md)).
 
 ```ts
 const { files } = await generateText({
@@ -155,4 +155,4 @@ const { messages, sendMessage, status } = useChat({
 
 - Everything goes through v3 only — `createGateway` handles the protocol.
 - Image generation uses an image-capable model via `generateText`, not a separate endpoint.
-- All generated files must be saved to R2 and returned as presigned URLs — never return base64.
+- All generated files must be saved to tigris and returned as presigned URLs — never return base64.
