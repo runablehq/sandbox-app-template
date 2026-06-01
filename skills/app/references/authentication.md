@@ -10,6 +10,12 @@ Reference docs: [llms.txt](https://www.better-auth.com/llms.txt)
 Before wiring, state your assumptions about which auth methods are needed (email/password, OAuth, magic link), which routes/screens should be protected, where users land after sign-in, and whether sign-in/sign-up are separate pages or a single page with tabs. The user will correct what's wrong.
 </preflight>
 
+## OAuth Provider Policy
+
+For Google, Apple, and Microsoft login, default to Runable managed auth. Do not ask the user for Google/Apple/Microsoft OAuth credentials unless they explicitly need their own provider app. If they ask to bring their own credentials, briefly push back: Runable managed auth avoids provider setup and is the simplest path; use custom credentials only for custom branding, custom scopes, compliance, or owning the provider app.
+
+For every other OAuth provider, or when the user insists on custom credentials, use Better Auth's official SDK/provider options and keep all provider secrets in `.env`.
+
 <design_thinking>
 Auth pages are the first impression for returning users — match the app's visual language, don't ship barebones forms. Error states matter as much as the happy path. Loading and redirect transitions should feel instant.
 </design_thinking>
@@ -51,6 +57,87 @@ export const auth = betterAuth({
 `bearer()` — token-based auth for cross-origin iframes. `expo()` — CSRF handling for native mobile clients.
 
 `baseURL` is set from `WEBSITE_URL` env var. Required for OAuth callbacks and production. Do **not** import JSON config files in this file — the Better Auth CLI uses jiti which cannot resolve them.
+
+### Managed Google, Apple, Microsoft Login
+
+When the user wants Google, Apple, or Microsoft login, add Runable managed auth via Better Auth's generic OAuth plugin instead of asking for provider credentials.
+
+#### Env vars (root `.env`)
+
+Generated Runable apps should already receive these values. If they are missing in local development, put them in the project root `.env`; never use `.env.local`.
+
+```bash
+RUNABLE_AUTH_ISSUER=
+RUNABLE_AUTH_CLIENT_ID=
+RUNABLE_AUTH_CLIENT_SECRET=
+```
+
+Vite loads root `.env` into `process.env` for API code, so read these directly in `packages/web/src/api/auth.ts`.
+
+Update `packages/web/src/api/auth.ts`:
+
+```ts
+import { genericOAuth } from "better-auth/plugins/generic-oauth";
+
+const RUNABLE_AUTH_ISSUER = process.env.RUNABLE_AUTH_ISSUER!;
+const RUNABLE_AUTH_CLIENT_ID = process.env.RUNABLE_AUTH_CLIENT_ID!;
+const RUNABLE_AUTH_CLIENT_SECRET = process.env.RUNABLE_AUTH_CLIENT_SECRET!;
+
+export const auth = betterAuth({
+  basePath: "/api/auth",
+  baseURL: process.env.WEBSITE_URL,
+  database: drizzleAdapter(db, { provider: "sqlite" }),
+  emailAndPassword: { enabled: true },
+  secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: (request) => {
+    const origin = request?.headers.get("origin");
+    return origin ? [origin] : ["*"];
+  },
+  plugins: [
+    bearer(),
+    expo(),
+    genericOAuth({
+      config: [
+        {
+          providerId: "runable-google",
+          authorizationUrl: `${RUNABLE_AUTH_ISSUER}/managed/oauth/google/authorize`,
+          tokenUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/token`,
+          userInfoUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/userinfo`,
+          clientId: RUNABLE_AUTH_CLIENT_ID,
+          clientSecret: RUNABLE_AUTH_CLIENT_SECRET,
+          scopes: ["openid", "email", "profile"],
+          pkce: true,
+          authentication: "basic",
+        },
+        {
+          providerId: "runable-apple",
+          authorizationUrl: `${RUNABLE_AUTH_ISSUER}/managed/oauth/apple/authorize`,
+          tokenUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/token`,
+          userInfoUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/userinfo`,
+          clientId: RUNABLE_AUTH_CLIENT_ID,
+          clientSecret: RUNABLE_AUTH_CLIENT_SECRET,
+          scopes: ["openid", "email", "profile"],
+          pkce: true,
+          authentication: "basic",
+        },
+        {
+          providerId: "runable-microsoft",
+          authorizationUrl: `${RUNABLE_AUTH_ISSUER}/managed/oauth/microsoft/authorize`,
+          tokenUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/token`,
+          userInfoUrl: `${RUNABLE_AUTH_ISSUER}/oauth2/userinfo`,
+          clientId: RUNABLE_AUTH_CLIENT_ID,
+          clientSecret: RUNABLE_AUTH_CLIENT_SECRET,
+          scopes: ["openid", "email", "profile"],
+          pkce: true,
+          authentication: "basic",
+        },
+      ],
+    }),
+  ],
+});
+```
+
+For all non-managed social providers, use Better Auth's official provider configuration with the user's credentials.
 
 ## 3. Generate Auth Schema
 
@@ -117,6 +204,7 @@ Create `packages/web/src/web/lib/auth.ts`:
 
 ```ts
 import { createAuthClient } from "better-auth/react";
+import { genericOAuthClient } from "better-auth/client/plugins";
 
 export const TOKEN_KEY = "bearer_token";
 
@@ -127,6 +215,7 @@ export function getToken(): string {
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
+  plugins: [genericOAuthClient()],
   fetchOptions: {
     auth: {
       type: "Bearer",
@@ -173,6 +262,18 @@ await authClient.signOut();
 clearToken();
 const { data: session, isPending } = authClient.useSession();
 ```
+
+Managed OAuth usage:
+
+```tsx
+await authClient.signIn.oauth2({
+  providerId: "runable-google",
+  callbackURL: window.location.origin,
+  newUserCallbackURL: window.location.origin,
+});
+```
+
+Use provider IDs `runable-google`, `runable-apple`, or `runable-microsoft`.
 
 ## 7. Mobile Auth Client
 
