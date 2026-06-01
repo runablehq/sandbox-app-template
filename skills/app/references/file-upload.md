@@ -1,15 +1,15 @@
-# File Upload (R2)
+# File Upload (Tigris)
 
 ## Setup
 
-Uses Cloudflare R2 via S3-compatible API with presigned URLs. Files upload directly from the client to R2 — never through the API server.
+Uses Tigris object storage via S3-compatible API with presigned URLs. Files upload directly from the client to Tigris — never through the API server.
 
-**All generated files (AI images, exports, etc.) must also be saved to R2** — never return base64 or temporary URLs. Save to R2, then return a presigned GET URL.
+**All generated files (AI images, exports, etc.) must also be saved to Tigris** — never return base64 or temporary URLs. Save to Tigris, then return a presigned GET URL.
 
 ### Env vars (root `.env`)
 
 ```
-S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+S3_ENDPOINT=https://t3.storage.dev
 S3_BUCKET=your-bucket-name
 S3_ACCESS_KEY_ID=your-access-key
 S3_SECRET_ACCESS_KEY=your-secret-key
@@ -23,6 +23,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 export const s3 = new S3Client({
   region: "auto",
   endpoint: process.env.S3_ENDPOINT,
+  s3ForcePathStyle: false,
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY_ID!,
     secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
